@@ -1,0 +1,58 @@
+name: 毎日ゴールデンクロス スキャン
+
+on:
+  schedule:
+    # 日本時間 16:15（UTC 07:15）平日のみ
+    - cron: '15 7 * * 1-5'
+    # 米国株用：日本時間 翌朝 7:00（UTC 22:00 前日）
+    - cron: '0 22 * * 1-5'
+  workflow_dispatch:  # 手動実行ボタン
+
+jobs:
+  scan-jpx400:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: ライブラリ インストール
+        run: pip install yfinance pandas
+
+      - name: JPX400 スキャン実行
+        run: python scan_jpx400.py
+
+      - name: 結果をコミット
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add results/
+          git diff --staged --quiet || git commit -m "scan: JPX400 $(date '+%Y-%m-%d %H:%M') JST"
+          git push
+
+  scan-sp500:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: ライブラリ インストール
+        run: pip install yfinance pandas
+
+      - name: S&P500 スキャン実行
+        run: python scan_sp500.py
+
+      - name: 結果をコミット
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add results/
+          git diff --staged --quiet || git commit -m "scan: SP500 $(date '+%Y-%m-%d %H:%M') JST"
+          git push
