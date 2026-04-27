@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>波乗りスキャナー | JPX400</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06090d;--bg2:#0a0e16;--surface:#0e1520;--surface2:#131d2a;
+  --border:#182030;--border2:#1e2c3e;
+  --accent:#00d4ff;--accent2:#0099bb;
+  --green:#00e676;--green-dim:rgba(0,230,118,.1);--green-border:rgba(0,230,118,.3);
+  --gold:#f5a623;--gold2:#c47d10;--gold-dim:rgba(245,166,35,.12);
+  --amber:#ffb300;--red:#ff4444;--blue:#38bdf8;
+  --text:#ccd8e8;--text2:#6e90b0;--text3:#334d66;
+  --mono:'JetBrains Mono',monospace;--sans:'Noto Sans JP',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-tap-highlight-color:transparent;overflow:hidden;font-size:14px}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto;background:var(--bg);overflow:hidden}
+
+/* HEADER */
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:11px 16px 9px;flex-shrink:0}
+.hdr-inner{display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.18em;color:var(--accent)}
+.logo-sub{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:3px;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.rule-chip{background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:2px 7px;font-size:9px;font-weight:700;color:var(--accent)}
+.updated{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:3px}
+
+/* TF BAR */
+.tf-bar{display:flex;align-items:center;gap:8px;padding:7px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+.tf-label{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.1em}
+.tf-btns{display:flex;gap:4px}
+.tf-btn{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;padding:4px 12px;border-radius:3px;border:1px solid var(--border2);background:var(--surface);color:var(--text3);cursor:pointer;transition:all .15s}
+.tf-btn.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.tf-note{font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:auto}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+.stat{padding:7px 0;text-align:center;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.stat-n{font-family:var(--mono);font-size:18px;font-weight:700;line-height:1;margin-bottom:2px}
+.stat-l{font-size:8px;color:var(--text3);letter-spacing:.06em;font-family:var(--mono)}
+
+/* TABS */
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;padding:0 16px;overflow-x:auto}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 12px;font-size:10px;font-weight:700;font-family:var(--mono);letter-spacing:.07em;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--text3);border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;margin-bottom:-1px;flex-shrink:0}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* LIST */
+.list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
+.list::-webkit-scrollbar{width:3px}
+.list::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* STOCK ROW */
+.srow{border-bottom:1px solid var(--border);padding:12px 16px;background:var(--bg);border-left:2px solid transparent;transition:background .1s}
+.srow:active{background:var(--surface)}
+.srow.gc  {border-left-color:var(--green);background:var(--green-dim)}
+.srow.rank-s{border-left-color:var(--gold);background:var(--gold-dim)}
+.srow.rank-a{border-left-color:#f5c842;background:rgba(245,200,66,.03)}
+.srow.rank-b{border-left-color:var(--blue);background:rgba(56,189,248,.02)}
+.srow.hold{border-left-color:var(--accent);background:rgba(0,212,255,.02)}
+
+.row-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.row-code{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.1em;margin-bottom:2px}
+.row-name{font-size:13px;font-weight:500;color:var(--text)}
+.row-right{text-align:right;flex-shrink:0;padding-left:10px}
+.row-price{font-family:var(--mono);font-size:17px;font-weight:700;line-height:1;margin-bottom:3px}
+.row-price.gc-c{color:var(--green)}
+.row-price.gold-c{color:var(--gold)}
+.row-price.blue-c{color:var(--blue)}
+.row-price.hold-c{color:var(--accent)}
+.row-price.def{color:var(--text)}
+
+/* MA compare */
+.ma-row{display:flex;gap:6px;margin-bottom:6px}
+.ma-cell{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:3px;padding:5px 8px}
+.mac-label{font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.08em;margin-bottom:2px}
+.mac-val{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text)}
+.mac-sub{font-family:var(--mono);font-size:9px;margin-top:2px}
+
+/* diff bar */
+.diff-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.diff-label{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.06em;width:80px;flex-shrink:0}
+.diff-track{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.diff-fill{height:100%;border-radius:2px;transition:width .5s}
+.diff-val{font-family:var(--mono);font-size:9px;font-weight:700;width:48px;text-align:right;flex-shrink:0}
+
+/* tags */
+.tag-row{display:flex;gap:5px;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:2px;text-transform:uppercase}
+.tg-gc{background:var(--green-dim);color:var(--green);border:1px solid var(--green-border)}
+.tg-s{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(245,166,35,.3)}
+.tg-a{background:rgba(245,200,66,.1);color:#f5c842;border:1px solid rgba(245,200,66,.25)}
+.tg-b{background:rgba(56,189,248,.1);color:var(--blue);border:1px solid rgba(56,189,248,.2)}
+.tg-hold{background:rgba(0,212,255,.08);color:var(--accent);border:1px solid rgba(0,212,255,.2)}
+.tg-conv{background:rgba(245,166,35,.1);color:var(--amber);border:1px solid rgba(245,166,35,.2)}
+.tg-accel{background:rgba(245,166,35,.15);color:var(--gold);border:1px solid rgba(245,166,35,.3)}
+
+/* predict */
+.predict{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:5px;letter-spacing:.04em}
+.predict b{font-size:11px;font-weight:700}
+
+/* PULSE */
+@keyframes gc-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,.5)}50%{box-shadow:0 0 0 6px rgba(0,230,118,0)}}
+.srow.gc .tag-row .tg-gc{animation:gc-pulse 2s infinite}
+
+/* EMPTY / LOADING */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 30px;text-align:center;height:100%}
+.empty-code{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text3);letter-spacing:.1em;margin-bottom:14px;line-height:1.4}
+.empty-title{font-size:14px;font-weight:500;color:var(--text2);margin-bottom:8px}
+.empty-sub{font-family:var(--mono);font-size:10px;color:var(--text3);line-height:1.9;letter-spacing:.04em}
+
+/* RELOAD BTN */
+.reload-btn{
+  margin:10px 16px 0;padding:10px;border-radius:3px;border:none;
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;
+  background:linear-gradient(90deg,var(--accent2),var(--accent));
+  color:var(--bg);cursor:pointer;width:calc(100% - 32px);
+  transition:opacity .2s;flex-shrink:0;
+}
+.reload-btn:active{opacity:.8}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="hdr">
+    <div class="hdr-inner">
+      <div>
+        <div class="logo">波乗りスキャナー</div>
+        <div class="logo-sub">
+          <span>JPX400 · MA5 ✕ MA10</span>
+          <span class="rule-chip">AUTO UPDATE</span>
+        </div>
+      </div>
+    </div>
+    <div class="updated" id="updatedAt">データ読み込み中...</div>
+  </div>
+
+  <!-- 足種 -->
+  <div class="tf-bar">
+    <div class="tf-label">足種</div>
+    <div class="tf-btns">
+      <button class="tf-btn on" onclick="setTF('1d',this)">日足</button>
+      <button class="tf-btn"    onclick="setTF('1wk',this)">週足</button>
+      <button class="tf-btn"    onclick="setTF('1mo',this)">月足</button>
+    </div>
+    <div class="tf-note" id="tfNote">MA5=5日 / MA10=10日</div>
+  </div>
+
+  <!-- RELOAD -->
+  <button class="reload-btn" onclick="loadData()">↻ データを再読み込み</button>
+
+  <!-- STATS -->
+  <div class="stats" id="stats">
+    <div class="stat"><div class="stat-n" id="stGC" style="color:var(--green)">—</div><div class="stat-l">GC 本日</div></div>
+    <div class="stat"><div class="stat-n" id="stS"  style="color:var(--gold)">—</div><div class="stat-l">RANK S</div></div>
+    <div class="stat"><div class="stat-n" id="stA"  style="color:#f5c842">—</div><div class="stat-l">RANK A</div></div>
+    <div class="stat"><div class="stat-n" id="stHold" style="color:var(--accent)">—</div><div class="stat-l">MA5上</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab on" onclick="setFilter('all',this)">ALL</button>
+    <button class="tab"    onclick="setFilter('gc',this)">GC 本日</button>
+    <button class="tab"    onclick="setFilter('s',this)">S ランク</button>
+    <button class="tab"    onclick="setFilter('a',this)">A ランク</button>
+    <button class="tab"    onclick="setFilter('b',this)">B ランク</button>
+    <button class="tab"    onclick="setFilter('hold',this)">MA5上</button>
+  </div>
+
+  <!-- LIST -->
+  <div class="list" id="list">
+    <div class="empty">
+      <div class="empty-code">LOADING</div>
+      <div class="empty-title">データ読み込み中</div>
+      <div class="empty-sub">results/jpx400.json を取得しています</div>
+    </div>
+  </div>
+
+</div>
+<script>
+let allData = {};   // timeframe → results[]
+let currentTF = '1d';
+let currentFilter = 'all';
+
+const TF_NOTES = {
+  '1d':  'MA5=5日 / MA10=10日',
+  '1wk': 'MA5=5週 / MA10=10週',
+  '1mo': 'MA5=5ヶ月 / MA10=10ヶ月',
+};
+
+// ── データ読み込み ──
+async function loadData() {
+  document.getElementById('updatedAt').textContent = '読み込み中...';
+  try {
+    const res = await fetch(`results/jpx400.json?t=${Date.now()}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    allData = json.timeframes || {};
+    document.getElementById('updatedAt').textContent = `最終スキャン: ${json.generated_at || '不明'}`;
+    render();
+  } catch(e) {
+    document.getElementById('updatedAt').textContent = 'データ未取得（GitHub Actionsを実行してください）';
+    document.getElementById('list').innerHTML = `
+      <div class="empty">
+        <div class="empty-code">NO DATA</div>
+        <div class="empty-title">データファイルが見つかりません</div>
+        <div class="empty-sub">
+          GitHub Actions を手動実行して<br>
+          results/jpx400.json を生成してください<br><br>
+          Actions → scan.yml → Run workflow
+        </div>
+      </div>`;
+  }
+}
+
+// ── 足種切り替え ──
+function setTF(tf, el) {
+  currentTF = tf;
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('tfNote').textContent = TF_NOTES[tf];
+  render();
+}
+
+// ── フィルター ──
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  render();
+}
+
+// ── 描画 ──
+function render() {
+  const results = allData[currentTF] || [];
+
+  // stats
+  const gc   = results.filter(r => r.gc_today).length;
+  const s    = results.filter(r => r.rank === 'S').length;
+  const a    = results.filter(r => r.rank === 'A').length;
+  const hold = results.filter(r => r.ma5_above && !r.gc_today).length;
+  document.getElementById('stGC').textContent   = gc;
+  document.getElementById('stS').textContent    = s;
+  document.getElementById('stA').textContent    = a;
+  document.getElementById('stHold').textContent = hold;
+
+  // filter
+  let data = [...results];
+  if (currentFilter === 'gc')   data = data.filter(r => r.gc_today);
+  if (currentFilter === 's')    data = data.filter(r => r.rank === 'S');
+  if (currentFilter === 'a')    data = data.filter(r => r.rank === 'A');
+  if (currentFilter === 'b')    data = data.filter(r => r.rank === 'B');
+  if (currentFilter === 'hold') data = data.filter(r => r.ma5_above && !r.gc_today);
+
+  if (data.length === 0) {
+    document.getElementById('list').innerHTML = `
+      <div class="empty">
+        <div class="empty-code">—</div>
+        <div class="empty-title">該当銘柄なし</div>
+        <div class="empty-sub">フィルターを変更してください</div>
+      </div>`;
+    return;
+  }
+
+  // sort: GC→S→A→B→hold→C、同ランクはスコア降順
+  const rankOrder = {GC:0,S:1,A:2,B:3,C:4};
+  data.sort((a, b) => {
+    if (a.gc_today && !b.gc_today) return -1;
+    if (!a.gc_today && b.gc_today) return 1;
+    const ro = (rankOrder[a.rank]||9) - (rankOrder[b.rank]||9);
+    if (ro !== 0) return ro;
+    return (b.score||0) - (a.score||0);
+  });
+
+  const el = document.getElementById('list');
+  el.innerHTML = data.map(r => {
+    const isGC   = r.gc_today;
+    const isS    = r.rank === 'S';
+    const isA    = r.rank === 'A';
+    const isB    = r.rank === 'B';
+    const isHold = r.ma5_above && !r.gc_today;
+
+    const rowCls  = isGC ? 'gc' : isS ? 'rank-s' : isA ? 'rank-a' : isB ? 'rank-b' : isHold ? 'hold' : '';
+    const priceC  = isGC ? 'gc-c' : isS ? 'gold-c' : isA ? 'gold-c' : isB ? 'blue-c' : isHold ? 'hold-c' : 'def';
+    const diffAbs = Math.abs(r.diff_pct || 0);
+    const barPct  = Math.min(diffAbs / 5 * 100, 100);
+    const barCol  = isGC ? 'var(--green)' : isS ? 'var(--gold)' : isA ? '#f5c842' : isB ? 'var(--blue)' : 'var(--text3)';
+    const diffSign = (r.diff_pct || 0) >= 0 ? '+' : '';
+    const ma5col  = r.ma5_above ? '#f59e0b' : 'var(--text3)';
+    const slopeSymbol = v => v > 0 ? '↑' : v < 0 ? '↓' : '→';
+    const slopeColor  = v => v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--text3)';
+
+    const tags = [
+      isGC   ? `<span class="tag tg-gc">● GC 本日</span>` : '',
+      isS    ? `<span class="tag tg-s">RANK S</span>` : '',
+      isA    ? `<span class="tag tg-a">RANK A</span>` : '',
+      isB    ? `<span class="tag tg-b">RANK B</span>` : '',
+      (!isGC && isHold && !isS && !isA && !isB) ? `<span class="tag tg-hold">MA5上</span>` : '',
+      r.is_conv  ? `<span class="tag tg-conv">収束中</span>` : '',
+      r.is_accel ? `<span class="tag tg-accel">加速</span>` : '',
+    ].filter(Boolean).join('');
+
+    const predict = isGC
+      ? `<div class="predict">本日 MA5 が MA10 を上抜け確認</div>`
+      : r.est_days
+      ? `<div class="predict">推定 <b style="color:${barCol}">${r.est_days}日後</b> にクロスの可能性</div>`
+      : r.is_conv
+      ? `<div class="predict">収束中 — 引き続き注視</div>`
+      : '';
+
+    return `<div class="srow ${rowCls}">
+      <div class="row-head">
+        <div>
+          <div class="row-code">${r.code}</div>
+          <div class="row-name">${r.name}</div>
+        </div>
+        <div class="row-right">
+          <div class="row-price ${priceC}">¥${Math.round(r.close).toLocaleString()}</div>
+        </div>
+      </div>
+      <div class="ma-row">
+        <div class="ma-cell">
+          <div class="mac-label" style="color:${ma5col}">MA 5</div>
+          <div class="mac-val">¥${Math.round(r.ma5).toLocaleString()}</div>
+          <div class="mac-sub" style="color:${slopeColor(r.ma5_slope)}">${slopeSymbol(r.ma5_slope)} ${Math.abs(r.ma5_slope||0).toFixed(0)}円</div>
+        </div>
+        <div class="ma-cell">
+          <div class="mac-label" style="color:#38bdf8">MA 10</div>
+          <div class="mac-val">¥${Math.round(r.ma10).toLocaleString()}</div>
+          <div class="mac-sub" style="color:${slopeColor(r.ma10_slope)}">${slopeSymbol(r.ma10_slope)} ${Math.abs(r.ma10_slope||0).toFixed(0)}円</div>
+        </div>
+        <div class="ma-cell">
+          <div class="mac-label" style="color:var(--text3)">乖離率</div>
+          <div class="mac-val" style="color:${barCol}">${diffSign}${(r.diff_pct||0).toFixed(2)}%</div>
+          <div class="mac-sub" style="color:var(--text3)">スコア ${r.score||0}</div>
+        </div>
+      </div>
+      <div class="diff-row">
+        <div class="diff-label">MA5 vs MA10</div>
+        <div class="diff-track"><div class="diff-fill" style="width:${barPct}%;background:${barCol}"></div></div>
+        <div class="diff-val" style="color:${barCol}">${diffSign}${(r.diff_pct||0).toFixed(2)}%</div>
+      </div>
+      <div class="tag-row">${tags}</div>
+      ${predict}
+    </div>`;
+  }).join('');
+}
+
+// 起動
+loadData();
+</script>
+</body>
+</html>
