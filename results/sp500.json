@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-28 12:39 JST",
+  "generated_at": "2026-04-28 13:04 JST",
   "market": "S&P500",
   "timeframes": {
     "1d": [
@@ -7321,9 +7321,9 @@
       {
         "code": "INCY",
         "name": "Incyte Corporation",
-        "close": 95.71,
+        "close": 95.72,
         "ma5": 95.76,
-        "ma10": 96.36,
+        "ma10": 96.37,
         "diff_pct": -0.63,
         "gc_today": false,
         "ma5_above": false,
@@ -7353,7 +7353,7 @@
         "est_days": null,
         "score": 37,
         "rank": "B",
-        "ma5_slope": -0.22,
+        "ma5_slope": -0.21,
         "ma10_slope": -0.11
       },
       {
@@ -10705,9 +10705,9 @@
       {
         "code": "BK",
         "name": "Bank of New York Mellon",
-        "close": 134.47,
-        "ma5": 130.66,
-        "ma10": 123.34,
+        "close": 133.94,
+        "ma5": 130.15,
+        "ma10": 122.85,
         "diff_pct": 5.94,
         "gc_today": false,
         "ma5_above": true,
@@ -10718,8 +10718,8 @@
         "est_days": null,
         "score": 30,
         "rank": "B",
-        "ma5_slope": 3.96,
-        "ma10_slope": 1.63
+        "ma5_slope": 3.95,
+        "ma10_slope": 1.62
       },
       {
         "code": "FCX",
@@ -15455,7 +15455,7 @@
       {
         "code": "INCY",
         "name": "Incyte Corporation",
-        "close": 95.71,
+        "close": 95.72,
         "ma5": 96.04,
         "ma10": 95.1,
         "diff_pct": 0.98,
