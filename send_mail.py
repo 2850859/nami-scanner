@@ -9,15 +9,14 @@ import csv
 import io
 import base64
 import datetime
-import urllib.request
-import urllib.error
+import requests
 
 
 def load_results(market: str) -> dict:
     """results/jpx400.json または sp500.json を読み込む"""
     path = f"results/{market}.json"
     if not os.path.exists(path):
-        print(f"  ⚠ {path} が見つかりません")
+        print(f"  WARN: {path} が見つかりません")
         return None
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -69,9 +68,10 @@ def make_csv(signals: list, market_label: str) -> str:
 
 
 def send_email(api_key: str, to_email: str, subject: str, html_body: str, attachments: list):
-    """Resend API でメール送信"""
+    """Resend API でメール送信（requestsライブラリ使用）"""
     url = "https://api.resend.com/emails"
 
+    # 日本語対応のため json= 引数で渡す（requestsが自動でUTF-8エンコード）
     payload = {
         "from": "Nami Scanner <onboarding@resend.dev>",
         "to": [to_email],
@@ -80,43 +80,36 @@ def send_email(api_key: str, to_email: str, subject: str, html_body: str, attach
         "attachments": attachments,
     }
 
-    # ★UTF-8で確実にエンコード
-    body_bytes = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-
-    req = urllib.request.Request(
-        url,
-        data=body_bytes,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json; charset=utf-8",
-            "Content-Length": str(len(body_bytes)),
-        },
-        method="POST",
-    )
+    headers = {
+        "Authorization": f"Bearer {api_key.strip()}",
+    }
 
     try:
-        with urllib.request.urlopen(req) as res:
-            response = json.loads(res.read())
-            print(f"  ✅ メール送信成功: {response.get('id', '')}")
+        # json= でrequestsが自動でUTF-8 JSONを生成
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+
+        if response.status_code in (200, 201):
+            data = response.json()
+            print(f"  OK メール送信成功: id={data.get('id', '')}")
             return True
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", errors="replace")
-        print(f"  ❌ メール送信失敗 ({e.code}): {body}")
-        return False
+        else:
+            print(f"  NG メール送信失敗 (status={response.status_code})")
+            print(f"  レスポンス: {response.text[:500]}")
+            return False
     except Exception as e:
-        print(f"  ❌ メール送信エラー: {e}")
+        print(f"  NG メール送信エラー: {e}")
         return False
 
 
 def main():
-    api_key = os.environ.get("RESEND_API_KEY")
-    to_email = os.environ.get("NOTIFY_EMAIL")
+    api_key = os.environ.get("RESEND_API_KEY", "").strip()
+    to_email = os.environ.get("NOTIFY_EMAIL", "").strip()
 
     if not api_key:
-        print("❌ RESEND_API_KEY が設定されていません")
+        print("NG RESEND_API_KEY が設定されていません")
         return
     if not to_email:
-        print("❌ NOTIFY_EMAIL が設定されていません")
+        print("NG NOTIFY_EMAIL が設定されていません")
         return
 
     # JST 現在日時
@@ -149,9 +142,8 @@ def main():
 
     total_signals = jpx_gc + jpx_s + jpx_a + sp_gc + sp_s + sp_a
 
-    # シグナルがない日は送信スキップ
     if total_signals == 0:
-        print("ℹ️ 本日のシグナルなし。メール送信をスキップします。")
+        print("INFO: 本日のシグナルなし。メール送信をスキップします。")
         return
 
     # ========================================
@@ -161,7 +153,6 @@ def main():
 
     if jpx_signals_1d:
         csv_text = make_csv(jpx_signals_1d, "JPX400")
-        # BOM付きUTF-8（Excel対策）
         csv_bytes = ("\ufeff" + csv_text).encode("utf-8")
         attachments.append({
             "filename": f"jpx400_signals_{today_str}.csv",
@@ -204,13 +195,13 @@ def main():
     </thead>
     <tbody>
       <tr>
-        <td style="padding: 10px; border: 1px solid #e0e6ed;">🇯🇵 JPX400</td>
+        <td style="padding: 10px; border: 1px solid #e0e6ed;">JPX400</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{jpx_gc}件</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{jpx_s}件</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{jpx_a}件</td>
       </tr>
       <tr>
-        <td style="padding: 10px; border: 1px solid #e0e6ed;">🇺🇸 SP500</td>
+        <td style="padding: 10px; border: 1px solid #e0e6ed;">SP500</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{sp_gc}件</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{sp_s}件</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{sp_a}件</td>
@@ -226,8 +217,8 @@ def main():
 
   <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">ウェブ版で確認</h2>
   <p>
-    <a href="https://2850859.github.io/nami-scanner/" style="display: inline-block; padding: 10px 20px; background: #00d4ff; color: white; text-decoration: none; border-radius: 5px; margin-right: 10px;">🇯🇵 JPX400</a>
-    <a href="https://2850859.github.io/nami-scanner/sp500.html" style="display: inline-block; padding: 10px 20px; background: #e84560; color: white; text-decoration: none; border-radius: 5px;">🇺🇸 SP500</a>
+    <a href="https://2850859.github.io/nami-scanner/" style="display: inline-block; padding: 10px 20px; background: #00d4ff; color: white; text-decoration: none; border-radius: 5px; margin-right: 10px;">JPX400</a>
+    <a href="https://2850859.github.io/nami-scanner/sp500.html" style="display: inline-block; padding: 10px 20px; background: #e84560; color: white; text-decoration: none; border-radius: 5px;">SP500</a>
   </p>
 
   <hr style="border: none; border-top: 1px solid #e0e6ed; margin: 30px 0 15px;">
@@ -243,7 +234,7 @@ def main():
     # 送信
     # ========================================
     print(f"\n{'='*50}")
-    print(f"📧 メール送信開始")
+    print(f"メール送信開始")
     print(f"{'='*50}")
     print(f"  宛先: {to_email}")
     print(f"  件名: {subject}")
