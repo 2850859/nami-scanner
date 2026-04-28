@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-28 11:28 JST",
+  "generated_at": "2026-04-28 12:39 JST",
   "market": "S&P500",
   "timeframes": {
     "1d": [
@@ -18840,9 +18840,9 @@
         "code": "BK",
         "name": "Bank of New York Mellon",
         "close": 134.47,
-        "ma5": 121.43,
-        "ma10": 113.82,
-        "diff_pct": 6.69,
+        "ma5": 121.06,
+        "ma10": 113.43,
+        "diff_pct": 6.73,
         "gc_today": false,
         "ma5_above": true,
         "is_conv": false,
@@ -18852,8 +18852,8 @@
         "est_days": null,
         "score": 30,
         "rank": "B",
-        "ma5_slope": 4.57,
-        "ma10_slope": 4.47
+        "ma5_slope": 4.66,
+        "ma10_slope": 4.5
       },
       {
         "code": "FCX",
