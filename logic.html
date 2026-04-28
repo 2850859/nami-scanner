@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>波乗りスキャナー｜ロジック図解</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Noto Sans JP', sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .score-bar { transition: width 1s ease-out; }
+  .card { transition: transform .2s; }
+  .card:hover { transform: translateY(-2px); }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- ヘッダー -->
+<header class="bg-gradient-to-r from-slate-900 to-slate-700 text-white py-10 px-4 text-center">
+  <div class="text-cyan-400 mono text-xs tracking-widest mb-2">NAMI SCANNER — LOGIC GUIDE</div>
+  <h1 class="text-3xl md:text-4xl font-black mb-3">🌊 波乗りスキャナーの<br>しくみを図解</h1>
+  <p class="text-slate-300 text-sm">中学生でもわかる、株のゴールデンクロス自動検出ロジック</p>
+</header>
+
+<!-- ========== STEP 1 ========== -->
+<section class="max-w-2xl mx-auto px-4 py-12">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center text-white font-black text-lg flex-shrink-0">1</div>
+    <h2 class="text-2xl font-black">ゴールデンクロスって何？</h2>
+  </div>
+
+  <div class="bg-white rounded-2xl p-6 shadow-sm mb-4">
+    <p class="text-slate-600 mb-4">株の「移動平均線（MA）」という数値を使います。</p>
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 text-center">
+        <div class="text-2xl mb-1">🏎️</div>
+        <div class="font-black text-amber-600">MA5（短期）</div>
+        <div class="text-xs text-slate-500 mt-1">直近5日間の株価の平均<br>＝ 速い車</div>
+      </div>
+      <div class="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 text-center">
+        <div class="text-2xl mb-1">🚌</div>
+        <div class="font-black text-blue-600">MA10（長期）</div>
+        <div class="text-xs text-slate-500 mt-1">直近10日間の株価の平均<br>＝ 遅いバス</div>
+      </div>
+    </div>
+
+    <!-- グラフっぽい図 -->
+    <div class="bg-slate-900 rounded-xl p-4 relative overflow-hidden" style="height:140px;">
+      <svg viewBox="0 0 300 100" class="w-full h-full" preserveAspectRatio="none">
+        <!-- MA10（青・遅い） -->
+        <polyline points="0,80 50,75 100,70 150,65 200,55 250,48 300,42"
+          fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-dasharray="6,3"/>
+        <!-- MA5（橙・速い） -->
+        <polyline points="0,85 50,82 100,75 150,62 200,48 250,36 300,28"
+          fill="none" stroke="#fbbf24" stroke-width="2.5"/>
+        <!-- クロスポイント -->
+        <circle cx="175" cy="57" r="6" fill="#00e676" opacity="0.9"/>
+        <line x1="175" y1="10" x2="175" y2="90" stroke="#00e676" stroke-width="1" stroke-dasharray="3,3"/>
+        <!-- ラベル -->
+        <text x="10" y="15" fill="#fbbf24" font-size="8" font-family="monospace">MA5（速い）</text>
+        <text x="10" y="95" fill="#60a5fa" font-size="8" font-family="monospace">MA10（遅い）</text>
+        <text x="180" y="22" fill="#00e676" font-size="9" font-family="monospace" font-weight="bold">← ここ！</text>
+      </svg>
+    </div>
+
+    <div class="mt-4 bg-emerald-50 border-l-4 border-emerald-400 rounded-r-xl p-4">
+      <div class="font-bold text-emerald-700 mb-1">🎯 ゴールデンクロス（GC）とは</div>
+      <p class="text-sm text-slate-600">
+        <strong>「速い車（MA5）が、遅いバス（MA10）を下から追い越した瞬間」</strong><br>
+        これが株価の上昇サインとされています。<br>
+        波乗りスキャナーはこの瞬間を900銘柄の中から自動で探します。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== STEP 2 ========== -->
+<section class="max-w-2xl mx-auto px-4 pb-12">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-white font-black text-lg flex-shrink-0">2</div>
+    <h2 class="text-2xl font-black">125点満点のスコアで判定</h2>
+  </div>
+
+  <div class="bg-white rounded-2xl p-6 shadow-sm mb-4">
+    <p class="text-slate-500 text-sm mb-5">GC直前の銘柄を「あとどのくらいでクロスするか」でスコアリングします。点数が高いほどクロス直前の優良候補！</p>
+
+    <!-- スコア項目 -->
+    <div class="space-y-3">
+
+      <div class="card bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <span class="font-bold">📏 近さ（乖離率）</span>
+            <div class="text-xs text-slate-500 mt-0.5">MA5とMA10の差がどのくらい小さいか</div>
+          </div>
+          <span class="mono font-black text-amber-600 text-lg">最大40点</span>
+        </div>
+        <div class="space-y-1 text-xs">
+          <div class="flex items-center gap-2">
+            <div class="w-24 bg-amber-200 rounded-full h-2"><div class="bg-amber-500 h-2 rounded-full" style="width:100%"></div></div>
+            <span class="text-slate-600">差0.3%以内 → <b class="text-amber-600">40点</b>（クロス直前！）</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-24 bg-amber-200 rounded-full h-2"><div class="bg-amber-500 h-2 rounded-full" style="width:80%"></div></div>
+            <span class="text-slate-600">差0.7%以内 → <b>32点</b></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-24 bg-amber-200 rounded-full h-2"><div class="bg-amber-500 h-2 rounded-full" style="width:55%"></div></div>
+            <span class="text-slate-600">差1.5%以内 → <b>22点</b></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-24 bg-amber-200 rounded-full h-2"><div class="bg-amber-500 h-2 rounded-full" style="width:30%"></div></div>
+            <span class="text-slate-600">差3.0%以内 → <b>12点</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="card bg-purple-50 border border-purple-200 rounded-xl p-3">
+          <div class="text-xl mb-1">📉</div>
+          <div class="font-bold text-sm">収束中</div>
+          <div class="text-xs text-slate-500 mb-2">差が縮まっている</div>
+          <span class="mono font-black text-purple-600">+15点</span>
+        </div>
+        <div class="card bg-orange-50 border border-orange-200 rounded-xl p-3">
+          <div class="text-xl mb-1">🚀</div>
+          <div class="font-bold text-sm">加速中</div>
+          <div class="text-xs text-slate-500 mb-2">MA5が速くなっている</div>
+          <span class="mono font-black text-orange-600">+15点</span>
+        </div>
+        <div class="card bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+          <div class="text-xl mb-1">📈</div>
+          <div class="font-bold text-sm">MA5が上昇中</div>
+          <div class="text-xs text-slate-500 mb-2">速い車が前に進んでいる</div>
+          <span class="mono font-black text-emerald-600">+15点</span>
+        </div>
+        <div class="card bg-teal-50 border border-teal-200 rounded-xl p-3">
+          <div class="text-xl mb-1">⚡</div>
+          <div class="font-bold text-sm">MA5がMA10より速い</div>
+          <div class="text-xs text-slate-500 mb-2">速い車が追い抜き態勢</div>
+          <span class="mono font-black text-teal-600">+15点</span>
+        </div>
+      </div>
+
+      <!-- NEW: 追加フィルター -->
+      <div class="bg-gradient-to-r from-emerald-50 to-cyan-50 border-2 border-emerald-300 rounded-xl p-4">
+        <div class="text-xs font-bold text-emerald-600 mb-3 tracking-wider">★ 勝率を上げるために追加した2つのフィルター</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <div class="text-lg mb-1">⬆️</div>
+            <div class="font-bold text-sm">MA10も上昇中</div>
+            <div class="text-xs text-slate-500 mb-2">バスも前に進んでいる<br>= 大きな流れも上向き</div>
+            <span class="mono font-black text-emerald-600">+10点</span>
+          </div>
+          <div>
+            <div class="text-lg mb-1">📅</div>
+            <div class="font-bold text-sm">週足でも MA5 &gt; MA10</div>
+            <div class="text-xs text-slate-500 mb-2">週単位でも上昇トレンド<br>= ダマシにくい</div>
+            <span class="mono font-black text-cyan-600">+15点</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 合計 -->
+    <div class="mt-4 bg-slate-800 rounded-xl p-4 text-white text-center">
+      <div class="text-slate-400 text-xs mb-1">スコア合計（最高）</div>
+      <div class="mono text-3xl font-black text-amber-400">125<span class="text-lg">点満点</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== STEP 3 ========== -->
+<section class="max-w-2xl mx-auto px-4 pb-12">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-black text-lg flex-shrink-0">3</div>
+    <h2 class="text-2xl font-black">スコアでランクに分ける</h2>
+  </div>
+
+  <div class="space-y-3">
+
+    <div class="bg-emerald-500 text-white rounded-2xl p-5 shadow-md card">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="text-3xl font-black mono bg-white/20 rounded-xl px-3 py-1">GC</div>
+          <div>
+            <div class="font-black text-xl">ゴールデンクロス 本日発生！</div>
+            <div class="text-emerald-100 text-sm">今日、MA5がMA10を追い越した</div>
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-emerald-200">特別扱い</div>
+          <div class="font-black">最優先 🎯</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-amber-500 text-white rounded-2xl p-5 shadow-md card">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="text-3xl font-black mono bg-white/20 rounded-xl px-3 py-1">S</div>
+          <div>
+            <div class="font-black text-xl">クロス直前の優良候補</div>
+            <div class="text-amber-100 text-sm">スコア 75点以上</div>
+          </div>
+        </div>
+        <div class="bg-white/20 rounded-xl px-3 py-1 mono font-black">≥ 75pt</div>
+      </div>
+      <div class="mt-3 bg-white/10 rounded-lg p-3 text-sm">
+        📌 例：乖離率0.3%以内(40pt) ＋ 収束(15pt) ＋ 加速(15pt) ＋ 週足↑(15pt) = <b>85点</b>
+      </div>
+    </div>
+
+    <div class="bg-yellow-400 text-slate-800 rounded-2xl p-5 shadow-md card">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="text-3xl font-black mono bg-black/10 rounded-xl px-3 py-1">A</div>
+          <div>
+            <div class="font-black text-xl">注目候補</div>
+            <div class="text-slate-600 text-sm">スコア 50〜74点</div>
+          </div>
+        </div>
+        <div class="bg-black/10 rounded-xl px-3 py-1 mono font-black">50〜74pt</div>
+      </div>
+    </div>
+
+    <div class="bg-blue-400 text-white rounded-2xl p-5 shadow-md card">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="text-3xl font-black mono bg-white/20 rounded-xl px-3 py-1">B</div>
+          <div>
+            <div class="font-black text-xl">様子見候補</div>
+            <div class="text-blue-100 text-sm">スコア 30〜49点</div>
+          </div>
+        </div>
+        <div class="bg-white/20 rounded-xl px-3 py-1 mono font-black">30〜49pt</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ========== STEP 4 ========== -->
+<section class="max-w-2xl mx-auto px-4 pb-12">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-black text-lg flex-shrink-0">4</div>
+    <h2 class="text-2xl font-black">全体の流れ（自動で動く）</h2>
+  </div>
+
+  <div class="space-y-2">
+    <div class="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-4 card">
+      <div class="text-2xl w-10 text-center flex-shrink-0">⏰</div>
+      <div>
+        <div class="font-bold">平日の朝・夜に自動起動</div>
+        <div class="text-xs text-slate-500">GitHub Actionsが時計代わりに動かす</div>
+      </div>
+    </div>
+    <div class="text-center text-slate-300 py-1">↓</div>
+    <div class="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-4 card">
+      <div class="text-2xl w-10 text-center flex-shrink-0">📊</div>
+      <div>
+        <div class="font-bold">JPX400・S&P500 全900銘柄の株価を取得</div>
+        <div class="text-xs text-slate-500">Yahoo Financeから無料で自動取得</div>
+      </div>
+    </div>
+    <div class="text-center text-slate-300 py-1">↓</div>
+    <div class="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-4 card">
+      <div class="text-2xl w-10 text-center flex-shrink-0">🧮</div>
+      <div>
+        <div class="font-bold">1銘柄ずつ 125点満点でスコアリング</div>
+        <div class="text-xs text-slate-500">GC・S・A・B・Cにランク分け</div>
+      </div>
+    </div>
+    <div class="text-center text-slate-300 py-1">↓</div>
+    <div class="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-4 card">
+      <div class="text-2xl w-10 text-center flex-shrink-0">📸</div>
+      <div>
+        <div class="font-bold">ダッシュボードのスクリーンショットを自動撮影</div>
+        <div class="text-xs text-slate-500">PlaywrightというAIブラウザが撮る</div>
+      </div>
+    </div>
+    <div class="text-center text-slate-300 py-1">↓</div>
+    <div class="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-4 card">
+      <div class="text-2xl w-10 text-center flex-shrink-0">📧</div>
+      <div>
+        <div class="font-bold">シグナル一覧CSV＋画像をメールで自動送信</div>
+        <div class="text-xs text-slate-500">Resendというメール送信サービスで届ける</div>
+      </div>
+    </div>
+    <div class="text-center text-slate-300 py-1">↓</div>
+    <div class="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-4 card">
+      <div class="text-2xl w-10 text-center flex-shrink-0">📈</div>
+      <div>
+        <div class="font-bold">GC銘柄の5日後・10日後・20日後を自動追跡</div>
+        <div class="text-xs text-slate-500">蓄積すると勝率が自動で計算される</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== まとめ ========== -->
+<section class="bg-slate-900 text-white py-12 px-4">
+  <div class="max-w-2xl mx-auto text-center">
+    <div class="text-2xl font-black mb-6">🏆 スコアの早見表</div>
+    <div class="bg-slate-800 rounded-2xl p-6 text-left mono text-sm space-y-2">
+      <div class="text-slate-400 text-xs mb-3"># 条件とボーナス点一覧</div>
+      <div class="flex justify-between"><span class="text-amber-400">乖離率 ≤ 0.3%</span><span class="text-white">+40点</span></div>
+      <div class="flex justify-between"><span class="text-amber-300">乖離率 ≤ 0.7%</span><span class="text-white">+32点</span></div>
+      <div class="flex justify-between"><span class="text-amber-200">乖離率 ≤ 1.5%</span><span class="text-white">+22点</span></div>
+      <div class="border-t border-slate-700 my-2"></div>
+      <div class="flex justify-between"><span class="text-purple-400">収束中</span><span class="text-white">+15点</span></div>
+      <div class="flex justify-between"><span class="text-orange-400">加速中</span><span class="text-white">+15点</span></div>
+      <div class="flex justify-between"><span class="text-emerald-400">MA5上昇</span><span class="text-white">+15点</span></div>
+      <div class="flex justify-between"><span class="text-teal-400">MA5がMA10より速い</span><span class="text-white">+15点</span></div>
+      <div class="border-t border-slate-700 my-2"></div>
+      <div class="flex justify-between"><span class="text-cyan-400">★ MA10も上昇</span><span class="text-white">+10点</span></div>
+      <div class="flex justify-between"><span class="text-cyan-300">★ 週足でも整合</span><span class="text-white">+15点</span></div>
+      <div class="border-t border-slate-600 my-2"></div>
+      <div class="flex justify-between font-bold"><span class="text-white">合計最高</span><span class="text-amber-400 text-lg">125点</span></div>
+    </div>
+    <div class="mt-6 grid grid-cols-4 gap-3 text-sm">
+      <div class="bg-emerald-600 rounded-xl py-3"><div class="font-black">GC</div><div class="text-xs text-emerald-200">今日発生</div></div>
+      <div class="bg-amber-500 rounded-xl py-3"><div class="font-black">S</div><div class="text-xs text-amber-100">≥75点</div></div>
+      <div class="bg-yellow-400 text-slate-800 rounded-xl py-3"><div class="font-black">A</div><div class="text-xs">50-74点</div></div>
+      <div class="bg-blue-500 rounded-xl py-3"><div class="font-black">B</div><div class="text-xs text-blue-100">30-49点</div></div>
+    </div>
+    <div class="mt-8 text-slate-400 text-sm">
+      <a href="https://2850859.github.io/nami-scanner/" class="text-cyan-400 hover:text-cyan-300 underline mr-4">→ JPX400ダッシュボード</a>
+      <a href="https://2850859.github.io/nami-scanner/sp500.html" class="text-red-400 hover:text-red-300 underline">→ SP500ダッシュボード</a>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
