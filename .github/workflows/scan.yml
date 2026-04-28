@@ -18,13 +18,19 @@ jobs:
           python-version: '3.12'
 
       - name: ライブラリ インストール
-        run: pip install yfinance pandas pyarrow requests
+        run: pip install yfinance pandas pyarrow requests playwright
+
+      - name: Playwright ブラウザ インストール
+        run: playwright install chromium --with-deps
 
       - name: JPX400 スキャン実行
         run: python scan_jpx400.py
 
       - name: SP500 スキャン実行
         run: python scan_sp500.py
+
+      - name: HTML図解スクリーンショット撮影
+        run: python screenshot.py
 
       - name: 結果をまとめてコミット
         run: |
@@ -34,7 +40,7 @@ jobs:
           git diff --staged --quiet || git commit -m "scan: $(date '+%Y-%m-%d %H:%M') JST"
           git push
 
-      - name: メール送信（CSV添付）
+      - name: メール送信（CSV・スクリーンショット添付）
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}

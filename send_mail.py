@@ -168,6 +168,25 @@ def main():
         })
 
     # ========================================
+    # スクリーンショット添付（存在する場合）
+    # ========================================
+    screenshots = [
+        ("results/screenshot_jpx400.png", f"jpx400_{today_str}.png"),
+        ("results/screenshot_sp500.png",  f"sp500_{today_str}.png"),
+    ]
+    has_screenshot = False
+    for src_path, attach_name in screenshots:
+        if os.path.exists(src_path):
+            with open(src_path, "rb") as f:
+                img_bytes = f.read()
+            attachments.append({
+                "filename": attach_name,
+                "content": base64.b64encode(img_bytes).decode("utf-8"),
+            })
+            has_screenshot = True
+            print(f"  スクリーンショット添付: {attach_name}")
+
+    # ========================================
     # メール本文（HTML）作成
     # ========================================
     subject = f"[波乗りスキャナー] {today_label} シグナル {total_signals}件 (GC:{jpx_gc + sp_gc} / S:{jpx_s + sp_s} / A:{jpx_a + sp_a})"
@@ -209,11 +228,12 @@ def main():
     </tbody>
   </table>
 
-  <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">添付CSV</h2>
+  <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">添付ファイル</h2>
   <p style="color: #666; font-size: 13px;">
     本日のGC本日・Sランク・Aランクの銘柄一覧をCSVで添付しました。<br>
     Excelで開く場合は文字化けせずに表示されます。
   </p>
+  {'<p style="color: #666; font-size: 13px; margin-top: 8px;">各市場のスキャン結果画面のスクリーンショットも添付しています。</p>' if has_screenshot else ''}
 
   <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">ウェブ版で確認</h2>
   <p>

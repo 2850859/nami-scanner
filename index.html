@@ -8,45 +8,47 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#06090d;--bg2:#0a0e16;--surface:#0e1520;--surface2:#131d2a;
-  --border:#182030;--border2:#1e2c3e;
-  --accent:#00d4ff;--accent2:#0099bb;
-  --green:#00e676;--green-dim:rgba(0,230,118,.1);--green-border:rgba(0,230,118,.3);
-  --gold:#f5a623;--gold2:#c47d10;--gold-dim:rgba(245,166,35,.12);
-  --amber:#ffb300;--red:#ff4444;--blue:#38bdf8;
-  --text:#ccd8e8;--text2:#6e90b0;--text3:#334d66;
+  --bg:#ffffff;--bg2:#f4f6f9;--surface:#eaecf2;--surface2:#e0e4ec;
+  --border:#d4d9e4;--border2:#bec6d4;
+  --accent:#0099cc;--accent2:#007aa3;
+  --green:#00955a;--green-dim:rgba(0,149,90,.07);--green-border:rgba(0,149,90,.25);
+  --gold:#d4820a;--gold2:#a86408;--gold-dim:rgba(212,130,10,.08);
+  --amber:#c47d00;--red:#d93025;--blue:#1a7fcb;
+  --text:#1a2535;--text2:#455a72;--text3:#8a9db8;
   --mono:'JetBrains Mono',monospace;--sans:'Noto Sans JP',sans-serif;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-tap-highlight-color:transparent;overflow:hidden;font-size:14px}
 #app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto;background:var(--bg);overflow:hidden}
 
 /* HEADER */
-.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:11px 16px 9px;flex-shrink:0}
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:7px 16px 5px;flex-shrink:0}
 .hdr-inner{display:flex;align-items:center;justify-content:space-between}
 .logo{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.18em;color:var(--accent)}
-.logo-sub{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:3px;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.logo-sub{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
 .rule-chip{background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:2px 7px;font-size:9px;font-weight:700;color:var(--accent)}
-.updated{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:3px}
+.updated{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px}
+.hdr-reload{font-size:14px;color:var(--text3);background:none;border:1px solid var(--border2);border-radius:3px;cursor:pointer;padding:4px 8px;line-height:1;transition:all .15s;flex-shrink:0}
+.hdr-reload:hover{color:var(--accent);border-color:var(--accent)}
 
 /* TF BAR */
-.tf-bar{display:flex;align-items:center;gap:8px;padding:7px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+.tf-bar{display:flex;align-items:center;gap:8px;padding:5px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
 .tf-label{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.1em}
 .tf-btns{display:flex;gap:4px}
-.tf-btn{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;padding:4px 12px;border-radius:3px;border:1px solid var(--border2);background:var(--surface);color:var(--text3);cursor:pointer;transition:all .15s}
+.tf-btn{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:3px;border:1px solid var(--border2);background:var(--surface);color:var(--text3);cursor:pointer;transition:all .15s}
 .tf-btn.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
 .tf-note{font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:auto}
 
 /* STATS */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
-.stat{padding:7px 0;text-align:center;border-right:1px solid var(--border)}
+.stat{padding:5px 0;text-align:center;border-right:1px solid var(--border)}
 .stat:last-child{border-right:none}
-.stat-n{font-family:var(--mono);font-size:18px;font-weight:700;line-height:1;margin-bottom:2px}
+.stat-n{font-family:var(--mono);font-size:16px;font-weight:700;line-height:1;margin-bottom:2px}
 .stat-l{font-size:8px;color:var(--text3);letter-spacing:.06em;font-family:var(--mono)}
 
 /* TABS */
-.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;padding:0 16px;overflow-x:auto}
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;padding:0 12px;overflow-x:auto}
 .tabs::-webkit-scrollbar{display:none}
-.tab{padding:8px 12px;font-size:10px;font-weight:700;font-family:var(--mono);letter-spacing:.07em;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--text3);border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;margin-bottom:-1px;flex-shrink:0}
+.tab{padding:5px 10px;font-size:10px;font-weight:700;font-family:var(--mono);letter-spacing:.07em;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--text3);border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;margin-bottom:-1px;flex-shrink:0}
 .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
 
 /* LIST */
@@ -54,74 +56,33 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .list::-webkit-scrollbar{width:3px}
 .list::-webkit-scrollbar-thumb{background:var(--border2)}
 
-/* STOCK ROW */
-.srow{border-bottom:1px solid var(--border);padding:12px 16px;background:var(--bg);border-left:2px solid transparent;transition:background .1s}
+/* STOCK ROW — 2段コンパクト */
+.srow{display:flex;flex-direction:column;padding:5px 12px 4px;background:var(--bg);border-bottom:1px solid var(--border);border-left:2px solid transparent;transition:background .1s}
 .srow:active{background:var(--surface)}
-.srow.gc  {border-left-color:var(--green);background:var(--green-dim)}
+.srow.gc    {border-left-color:var(--green);background:var(--green-dim)}
 .srow.rank-s{border-left-color:var(--gold);background:var(--gold-dim)}
-.srow.rank-a{border-left-color:#f5c842;background:rgba(245,200,66,.03)}
-.srow.rank-b{border-left-color:var(--blue);background:rgba(56,189,248,.02)}
-.srow.hold{border-left-color:var(--accent);background:rgba(0,212,255,.02)}
-
-.row-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
-.row-code{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.1em;margin-bottom:2px}
-.row-name{font-size:13px;font-weight:500;color:var(--text)}
-.row-right{text-align:right;flex-shrink:0;padding-left:10px}
-.row-price{font-family:var(--mono);font-size:17px;font-weight:700;line-height:1;margin-bottom:3px}
-.row-price.gc-c{color:var(--green)}
-.row-price.gold-c{color:var(--gold)}
-.row-price.blue-c{color:var(--blue)}
-.row-price.hold-c{color:var(--accent)}
-.row-price.def{color:var(--text)}
-
-/* MA compare */
-.ma-row{display:flex;gap:6px;margin-bottom:6px}
-.ma-cell{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:3px;padding:5px 8px}
-.mac-label{font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.08em;margin-bottom:2px}
-.mac-val{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text)}
-.mac-sub{font-family:var(--mono);font-size:9px;margin-top:2px}
-
-/* diff bar */
-.diff-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.diff-label{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.06em;width:80px;flex-shrink:0}
-.diff-track{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
-.diff-fill{height:100%;border-radius:2px;transition:width .5s}
-.diff-val{font-family:var(--mono);font-size:9px;font-weight:700;width:48px;text-align:right;flex-shrink:0}
-
-/* tags */
-.tag-row{display:flex;gap:5px;flex-wrap:wrap}
-.tag{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:2px;text-transform:uppercase}
-.tg-gc{background:var(--green-dim);color:var(--green);border:1px solid var(--green-border)}
-.tg-s{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(245,166,35,.3)}
-.tg-a{background:rgba(245,200,66,.1);color:#f5c842;border:1px solid rgba(245,200,66,.25)}
-.tg-b{background:rgba(56,189,248,.1);color:var(--blue);border:1px solid rgba(56,189,248,.2)}
-.tg-hold{background:rgba(0,212,255,.08);color:var(--accent);border:1px solid rgba(0,212,255,.2)}
-.tg-conv{background:rgba(245,166,35,.1);color:var(--amber);border:1px solid rgba(245,166,35,.2)}
-.tg-accel{background:rgba(245,166,35,.15);color:var(--gold);border:1px solid rgba(245,166,35,.3)}
-
-/* predict */
-.predict{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:5px;letter-spacing:.04em}
-.predict b{font-size:11px;font-weight:700}
+.srow.rank-a{border-left-color:#f5c842;background:rgba(200,160,30,.06)}
+.srow.rank-b{border-left-color:var(--blue);background:rgba(26,127,203,.04)}
+.srow.hold  {border-left-color:var(--accent);background:rgba(0,153,204,.04)}
+.sr-main{display:flex;align-items:center;gap:6px}
+.sr-rank{font-family:var(--mono);font-size:9px;font-weight:700;width:20px;text-align:center;flex-shrink:0}
+.sr-code{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text2);width:46px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-name{font-size:11px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sr-price{font-family:var(--mono);font-size:12px;font-weight:700;flex-shrink:0;text-align:right;width:74px}
+.sr-sub{font-family:var(--mono);font-size:8px;color:var(--text3);flex-shrink:0;width:28px;text-align:right}
+.sr-meta{display:flex;gap:10px;margin-top:2px;padding-left:26px}
+.sr-mi{font-family:var(--mono);font-size:9px;color:var(--text3)}
+.sr-mi b{font-weight:700}
 
 /* PULSE */
-@keyframes gc-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,.5)}50%{box-shadow:0 0 0 6px rgba(0,230,118,0)}}
-.srow.gc .tag-row .tg-gc{animation:gc-pulse 2s infinite}
+@keyframes gc-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,.4)}50%{box-shadow:0 0 0 5px rgba(0,230,118,0)}}
+.srow.gc .sr-rank{animation:gc-pulse 2s infinite;border-radius:2px}
 
 /* EMPTY / LOADING */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 30px;text-align:center;height:100%}
 .empty-code{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text3);letter-spacing:.1em;margin-bottom:14px;line-height:1.4}
 .empty-title{font-size:14px;font-weight:500;color:var(--text2);margin-bottom:8px}
 .empty-sub{font-family:var(--mono);font-size:10px;color:var(--text3);line-height:1.9;letter-spacing:.04em}
-
-/* RELOAD BTN */
-.reload-btn{
-  margin:10px 16px 0;padding:10px;border-radius:3px;border:none;
-  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;
-  background:linear-gradient(90deg,var(--accent2),var(--accent));
-  color:var(--bg);cursor:pointer;width:calc(100% - 32px);
-  transition:opacity .2s;flex-shrink:0;
-}
-.reload-btn:active{opacity:.8}
 </style>
 </head>
 <body>
@@ -136,6 +97,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
           <span class="rule-chip">AUTO UPDATE</span>
         </div>
       </div>
+      <button class="hdr-reload" onclick="loadData()" title="データを再読み込み">↻</button>
     </div>
     <div class="updated" id="updatedAt">データ読み込み中...</div>
   </div>
@@ -150,9 +112,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
     </div>
     <div class="tf-note" id="tfNote">MA5=5日 / MA10=10日</div>
   </div>
-
-  <!-- RELOAD -->
-  <button class="reload-btn" onclick="loadData()">↻ データを再読み込み</button>
 
   <!-- STATS -->
   <div class="stats" id="stats">
@@ -285,68 +244,26 @@ function render() {
     const isB    = r.rank === 'B';
     const isHold = r.ma5_above && !r.gc_today;
 
-    const rowCls  = isGC ? 'gc' : isS ? 'rank-s' : isA ? 'rank-a' : isB ? 'rank-b' : isHold ? 'hold' : '';
-    const priceC  = isGC ? 'gc-c' : isS ? 'gold-c' : isA ? 'gold-c' : isB ? 'blue-c' : isHold ? 'hold-c' : 'def';
-    const diffAbs = Math.abs(r.diff_pct || 0);
-    const barPct  = Math.min(diffAbs / 5 * 100, 100);
-    const barCol  = isGC ? 'var(--green)' : isS ? 'var(--gold)' : isA ? '#f5c842' : isB ? 'var(--blue)' : 'var(--text3)';
+    const rowCls   = isGC ? 'gc' : isS ? 'rank-s' : isA ? 'rank-a' : isB ? 'rank-b' : isHold ? 'hold' : '';
+    const barCol   = isGC ? 'var(--green)' : isS ? 'var(--gold)' : isA ? '#d4820a' : isB ? 'var(--blue)' : 'var(--text3)';
     const diffSign = (r.diff_pct || 0) >= 0 ? '+' : '';
-    const ma5col  = r.ma5_above ? '#f59e0b' : 'var(--text3)';
-    const slopeSymbol = v => v > 0 ? '↑' : v < 0 ? '↓' : '→';
-    const slopeColor  = v => v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--text3)';
-
-    const tags = [
-      isGC   ? `<span class="tag tg-gc">● GC 本日</span>` : '',
-      isS    ? `<span class="tag tg-s">RANK S</span>` : '',
-      isA    ? `<span class="tag tg-a">RANK A</span>` : '',
-      isB    ? `<span class="tag tg-b">RANK B</span>` : '',
-      (!isGC && isHold && !isS && !isA && !isB) ? `<span class="tag tg-hold">MA5上</span>` : '',
-      r.is_conv  ? `<span class="tag tg-conv">収束中</span>` : '',
-      r.is_accel ? `<span class="tag tg-accel">加速</span>` : '',
-    ].filter(Boolean).join('');
-
-    const predict = isGC
-      ? `<div class="predict">本日 MA5 が MA10 を上抜け確認</div>`
-      : r.est_days
-      ? `<div class="predict">推定 <b style="color:${barCol}">${r.est_days}日後</b> にクロスの可能性</div>`
-      : r.is_conv
-      ? `<div class="predict">収束中 — 引き続き注視</div>`
-      : '';
+    const subText  = isGC ? '●' : r.est_days ? `→${r.est_days}日` : r.is_conv ? '収束' : r.is_accel ? '加速' : '';
+    const arrow    = v => v > 0 ? '↑' : v < 0 ? '↓' : '→';
+    const sc       = v => v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--text3)';
 
     return `<div class="srow ${rowCls}">
-      <div class="row-head">
-        <div>
-          <div class="row-code">${r.code}</div>
-          <div class="row-name">${r.name}</div>
-        </div>
-        <div class="row-right">
-          <div class="row-price ${priceC}">¥${Math.round(r.close).toLocaleString()}</div>
-        </div>
+      <div class="sr-main">
+        <div class="sr-rank" style="color:${barCol}">${isGC ? 'GC' : (r.rank||'C')}</div>
+        <div class="sr-code">${r.code.replace('.T','')}</div>
+        <div class="sr-name">${r.name}</div>
+        <div class="sr-price" style="color:${barCol}">¥${Math.round(r.close).toLocaleString()}</div>
+        <div class="sr-sub">${subText}</div>
       </div>
-      <div class="ma-row">
-        <div class="ma-cell">
-          <div class="mac-label" style="color:${ma5col}">MA 5</div>
-          <div class="mac-val">¥${Math.round(r.ma5).toLocaleString()}</div>
-          <div class="mac-sub" style="color:${slopeColor(r.ma5_slope)}">${slopeSymbol(r.ma5_slope)} ${Math.abs(r.ma5_slope||0).toFixed(0)}円</div>
-        </div>
-        <div class="ma-cell">
-          <div class="mac-label" style="color:#38bdf8">MA 10</div>
-          <div class="mac-val">¥${Math.round(r.ma10).toLocaleString()}</div>
-          <div class="mac-sub" style="color:${slopeColor(r.ma10_slope)}">${slopeSymbol(r.ma10_slope)} ${Math.abs(r.ma10_slope||0).toFixed(0)}円</div>
-        </div>
-        <div class="ma-cell">
-          <div class="mac-label" style="color:var(--text3)">乖離率</div>
-          <div class="mac-val" style="color:${barCol}">${diffSign}${(r.diff_pct||0).toFixed(2)}%</div>
-          <div class="mac-sub" style="color:var(--text3)">スコア ${r.score||0}</div>
-        </div>
+      <div class="sr-meta">
+        <div class="sr-mi">MA5 <b style="color:${sc(r.ma5_slope)}">${arrow(r.ma5_slope)}${Math.abs(r.ma5_slope||0).toFixed(0)}円</b></div>
+        <div class="sr-mi">MA10 <b style="color:${sc(r.ma10_slope)}">${arrow(r.ma10_slope)}${Math.abs(r.ma10_slope||0).toFixed(0)}円</b></div>
+        <div class="sr-mi">乖離 <b style="color:${barCol}">${diffSign}${(r.diff_pct||0).toFixed(2)}%</b></div>
       </div>
-      <div class="diff-row">
-        <div class="diff-label">MA5 vs MA10</div>
-        <div class="diff-track"><div class="diff-fill" style="width:${barPct}%;background:${barCol}"></div></div>
-        <div class="diff-val" style="color:${barCol}">${diffSign}${(r.diff_pct||0).toFixed(2)}%</div>
-      </div>
-      <div class="tag-row">${tags}</div>
-      ${predict}
     </div>`;
   }).join('');
 }
