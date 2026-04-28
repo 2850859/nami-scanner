@@ -147,6 +147,18 @@ def main():
         return
 
     # ========================================
+    # GC追跡 勝率統計の読み込み
+    # ========================================
+    gc_stats = {}
+    gc_total = 0
+    gc_stats_path = "data/gc_stats.json"
+    if os.path.exists(gc_stats_path):
+        with open(gc_stats_path, "r", encoding="utf-8") as f:
+            _s = json.load(f)
+            gc_stats = _s.get("stats", {})
+            gc_total = _s.get("total", 0)
+
+    # ========================================
     # CSV 添付ファイルを作成
     # ========================================
     attachments = []
@@ -234,6 +246,9 @@ def main():
     Excelで開く場合は文字化けせずに表示されます。
   </p>
   {'<p style="color: #666; font-size: 13px; margin-top: 8px;">各市場のスキャン結果画面のスクリーンショットも添付しています。</p>' if has_screenshot else ''}
+
+  <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">GC追跡 勝率実績（累計 {gc_total}件）</h2>
+  {'<table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;"><thead><tr style="background:#f5f7fa;"><th style="padding:8px;border:1px solid #e0e6ed;text-align:left;">期間</th><th style="padding:8px;border:1px solid #e0e6ed;text-align:center;">勝率</th><th style="padding:8px;border:1px solid #e0e6ed;text-align:center;">件数</th><th style="padding:8px;border:1px solid #e0e6ed;text-align:center;">平均騰落率</th></tr></thead><tbody>' + "".join(f\'<tr><td style="padding:8px;border:1px solid #e0e6ed;">{p}日後</td><td style="padding:8px;border:1px solid #e0e6ed;text-align:center;font-weight:bold;color:{("#00955a" if s["win_rate"]>=50 else "#d93025")}">{s["win_rate"]}%</td><td style="padding:8px;border:1px solid #e0e6ed;text-align:center;">{s["wins"]}/{s["total"]}件</td><td style="padding:8px;border:1px solid #e0e6ed;text-align:center;color:{("#00955a" if s["avg_pct"]>=0 else "#d93025")};font-weight:bold;">{"+" if s["avg_pct"]>=0 else ""}{s["avg_pct"]}%</td></tr>\' for p, s in gc_stats.items()) + "</tbody></table>" if gc_stats else "<p style=\'color:#999;font-size:13px;\'>データ蓄積中...（GCシグナルが累積されると勝率が表示されます）</p>"}
 
   <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">ウェブ版で確認</h2>
   <p>

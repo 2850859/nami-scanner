@@ -32,11 +32,14 @@ jobs:
       - name: HTML図解スクリーンショット撮影
         run: python screenshot.py
 
+      - name: GC追跡・勝率集計
+        run: python track_gc.py
+
       - name: 結果をまとめてコミット
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add results/ data/
+          git add results/ data/ --ignore-errors
           git diff --staged --quiet || git commit -m "scan: $(date '+%Y-%m-%d %H:%M') JST"
           git push
 
