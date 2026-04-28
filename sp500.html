@@ -95,6 +95,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
         <div class="logo-sub">
           <span>S&P500 · MA5 ✕ MA10</span>
           <span class="rule-chip">AUTO UPDATE</span>
+          <span id="mktRegime" style="font-size:9px;font-weight:700;font-family:var(--mono)"></span>
         </div>
       </div>
       <button class="hdr-reload" onclick="loadData()" title="データを再読み込み">↻</button>
@@ -161,6 +162,14 @@ async function loadData() {
     const json = await res.json();
     allData = json.timeframes || {};
     document.getElementById('updatedAt').textContent = `最終スキャン: ${json.generated_at || '不明'}`;
+    // 相場レジーム表示
+    const regime = json.market_regime;
+    if (regime) {
+      const el = document.getElementById('mktRegime');
+      el.textContent = regime.bullish ? '市場↑' : '市場⚠';
+      el.style.color = regime.bullish ? 'var(--green)' : 'var(--amber)';
+      el.title = regime.detail || '';
+    }
     render();
   } catch(e) {
     document.getElementById('updatedAt').textContent = 'データ未取得（GitHub Actionsを実行してください）';
@@ -263,6 +272,7 @@ function render() {
         <div class="sr-mi">MA5 <b style="color:${sc(r.ma5_slope)}">${arrow(r.ma5_slope)}$${Math.abs(r.ma5_slope||0).toFixed(2)}</b></div>
         <div class="sr-mi">MA10 <b style="color:${sc(r.ma10_slope)}">${arrow(r.ma10_slope)}$${Math.abs(r.ma10_slope||0).toFixed(2)}</b></div>
         <div class="sr-mi">乖離 <b style="color:${barCol}">${diffSign}${(r.diff_pct||0).toFixed(2)}%</b></div>
+        ${r.vol_ratio != null ? `<div class="sr-mi">出来高 <b style="color:${r.vol_confirmed ? 'var(--green)' : 'var(--text3)'}">×${r.vol_ratio.toFixed(1)}</b></div>` : ''}
         ${r.weekly_aligned ? '<div class="sr-mi"><b style="color:var(--green)">週足↑</b></div>' : ''}
       </div>
     </div>`;

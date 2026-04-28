@@ -154,7 +154,7 @@ def calc_ma(prices, n):
         return None
     return sum(prices[-n:]) / n
 
-def analyze(prices):
+def analyze(prices, volumes=None):
     if not prices or len(prices) < 12:
         return None
     ma5_t0  = calc_ma(prices, 5)
@@ -190,6 +190,15 @@ def analyze(prices):
         if 0 < n <= 30:
             est_days = int(n) + 1
 
+    # 出来高確認（直近20日平均の1.5倍以上 → 買いエネルギー大）
+    vol_ratio = None
+    vol_confirmed = False
+    if volumes and len(volumes) >= 21:
+        vol_avg20 = sum(volumes[-21:-1]) / 20
+        if vol_avg20 > 0:
+            vol_ratio = round(volumes[-1] / vol_avg20, 2)
+            vol_confirmed = vol_ratio >= 1.5
+
     score = 0
     abs_pct = abs(diff_pct)
     if   abs_pct <= 0.3: score += 40
@@ -202,26 +211,29 @@ def analyze(prices):
     if ma5_rising:     score += 15
     if ma5_faster:     score += 15
     if ma10_slope > 0: score += 10  # MA10も上昇中
+    if vol_confirmed and not gc_today: score += 15  # 出来高急増ボーナス
     if gc_today:       score = 0
 
     rank = "GC" if gc_today else "S" if score >= 75 else "A" if score >= 50 else "B" if score >= 30 else "C"
 
     return {
-        "close":      round(prices[-1], 2),
-        "ma5":        round(ma5_t0, 2),
-        "ma10":       round(ma10_t0, 2),
-        "diff_pct":   round(diff_pct, 2),
-        "gc_today":   gc_today,
-        "ma5_above":  ma5_above,
-        "is_conv":    is_conv,
-        "is_accel":   is_accel,
-        "ma5_rising": ma5_rising,
-        "ma5_faster": ma5_faster,
-        "est_days":   est_days,
-        "score":      score,
-        "rank":       rank,
-        "ma5_slope":  round(ma5_slope, 2),
-        "ma10_slope": round(ma10_slope, 2),
+        "close":         round(prices[-1], 2),
+        "ma5":           round(ma5_t0, 2),
+        "ma10":          round(ma10_t0, 2),
+        "diff_pct":      round(diff_pct, 2),
+        "gc_today":      gc_today,
+        "ma5_above":     ma5_above,
+        "is_conv":       is_conv,
+        "is_accel":      is_accel,
+        "ma5_rising":    ma5_rising,
+        "ma5_faster":    ma5_faster,
+        "est_days":      est_days,
+        "score":         score,
+        "rank":          rank,
+        "ma5_slope":     round(ma5_slope, 2),
+        "ma10_slope":    round(ma10_slope, 2),
+        "vol_ratio":     vol_ratio,
+        "vol_confirmed": vol_confirmed,
     }
 
 def fetch_closes(ticker, period, interval):
@@ -235,7 +247,42 @@ def fetch_closes(ticker, period, interval):
         print(f"  ⚠ {ticker}: {e}")
         return None
 
-def scan_all(timeframe, weekly_lookup: dict | None = None):
+def fetch_ohlcv(ticker, period, interval):
+    """終値と出来高を1回のAPIコールで取得"""
+    try:
+        t = yf.Ticker(ticker)
+        df = t.history(period=period, interval=interval)
+        if df.empty or len(df) < 12:
+            return None, None
+        closes = df["Close"].dropna().tolist()
+        volumes = df["Volume"].tolist()
+        return closes, volumes
+    except Exception as e:
+        print(f"  ⚠ {ticker}: {e}")
+        return None, None
+
+def check_market_regime(index_code="^GSPC"):
+    """市場全体のトレンドを確認（MA20 vs MA50）"""
+    try:
+        df = yf.Ticker(index_code).history(period="6mo", interval="1d")
+        if df.empty or len(df) < 50:
+            return {"bullish": True, "detail": "データ不足"}
+        closes = df["Close"].dropna().tolist()
+        ma20 = sum(closes[-20:]) / 20
+        ma50 = sum(closes[-50:]) / 50
+        bullish = ma20 > ma50
+        return {
+            "bullish": bullish,
+            "ma20": round(ma20, 2),
+            "ma50": round(ma50, 2),
+            "index": index_code,
+            "detail": "上昇トレンド" if bullish else "⚠ 下降トレンド",
+        }
+    except Exception as e:
+        print(f"  市場トレンド取得失敗: {e}")
+        return {"bullish": True, "detail": "取得失敗"}
+
+def scan_all(timeframe, weekly_lookup: dict | None = None, market_regime: dict | None = None):
     cfg = {
         "1d":  {"period": "3mo",  "interval": "1d"},
         "1wk": {"period": "2y",   "interval": "1wk"},
@@ -246,12 +293,19 @@ def scan_all(timeframe, weekly_lookup: dict | None = None):
     total = len(SP500_TICKERS)
     for i, (code, name) in enumerate(SP500_TICKERS):
         print(f"  [{i+1:3}/{total}] {code} {name}", end=" ")
-        closes = fetch_closes(code, cfg["period"], cfg["interval"])
+
+        if timeframe == "1d":
+            closes, volumes = fetch_ohlcv(code, cfg["period"], cfg["interval"])
+        else:
+            closes = fetch_closes(code, cfg["period"], cfg["interval"])
+            volumes = None
+
         if closes is None:
             print("SKIP")
             time.sleep(0.3)
             continue
-        sig = analyze(closes)
+
+        sig = analyze(closes, volumes)
         if sig:
             # 週足整合フィルター：週足でも MA5 > MA10 なら +15点
             weekly_aligned = weekly_lookup.get(code, False) if weekly_lookup else None
@@ -263,9 +317,23 @@ def scan_all(timeframe, weekly_lookup: dict | None = None):
                     "B" if sig["score"] >= 30 else "C"
                 )
             sig["weekly_aligned"] = weekly_aligned
+
+            # 相場全体フィルター：指数が下降トレンドの場合、スコアを減点
+            market_caution = False
+            if (market_regime and not market_regime.get("bullish", True)
+                    and not sig["gc_today"]):
+                sig["score"] = max(0, sig["score"] - 20)
+                sig["rank"] = (
+                    "S" if sig["score"] >= 75 else
+                    "A" if sig["score"] >= 50 else
+                    "B" if sig["score"] >= 30 else "C"
+                )
+                market_caution = True
+            sig["market_caution"] = market_caution
+
             results.append({"code": code, "name": name, **sig})
-            wa = "W✓" if weekly_aligned else ""
-            print(f"rank={sig['rank']} gc={sig['gc_today']} score={sig['score']} {wa}")
+            flags = ("W✓" if weekly_aligned else "") + (" V✓" if sig.get("vol_confirmed") else "") + (" ⚠市場" if market_caution else "")
+            print(f"rank={sig['rank']} gc={sig['gc_today']} score={sig['score']}{flags}")
         else:
             print("no data")
         time.sleep(0.3)
@@ -282,6 +350,14 @@ def main():
         "timeframes": {}
     }
 
+    # 相場全体トレンド確認（S&P500 MA20 vs MA50）
+    print(f"\n{'='*50}")
+    print(f"相場トレンド確認中...")
+    print(f"{'='*50}")
+    regime = check_market_regime("^GSPC")
+    print(f"  S&P500: MA20={regime['ma20']} / MA50={regime['ma50']} → {regime['detail']}")
+    output["market_regime"] = regime
+
     # 週足を先にスキャンして lookup を構築（日足の週足整合フィルターに使用）
     print(f"\n{'='*50}")
     print(f"S&P500 週足スキャン開始 ({now_str})")
@@ -294,12 +370,17 @@ def main():
         print(f"\n{'='*50}")
         print(f"S&P500 スキャン開始: {tf} ({now_str})")
         print(f"{'='*50}")
-        results = scan_all(tf, weekly_lookup=weekly_lookup if tf == "1d" else None)
+        results = scan_all(
+            tf,
+            weekly_lookup=weekly_lookup if tf == "1d" else None,
+            market_regime=regime if tf == "1d" else None,
+        )
         output["timeframes"][tf] = results
         gc     = [r for r in results if r["gc_today"]]
         rank_s = [r for r in results if r["rank"] == "S"]
         wa     = [r for r in results if r.get("weekly_aligned")]
-        print(f"\n  GC本日: {len(gc)}件  Sランク: {len(rank_s)}件  週足整合: {len(wa)}件  合計: {len(results)}件")
+        vol    = [r for r in results if r.get("vol_confirmed")]
+        print(f"\n  GC本日: {len(gc)}件  Sランク: {len(rank_s)}件  週足整合: {len(wa)}件  出来高急増: {len(vol)}件  合計: {len(results)}件")
 
     with open("results/sp500.json", "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
