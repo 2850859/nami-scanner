@@ -18,7 +18,7 @@ jobs:
           python-version: '3.12'
 
       - name: ライブラリ インストール
-        run: pip install yfinance pandas
+        run: pip install yfinance pandas pyarrow
 
       - name: JPX400 スキャン実行
         run: python scan_jpx400.py
@@ -30,6 +30,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add results/
+          git add results/ data/
           git diff --staged --quiet || git commit -m "scan: $(date '+%Y-%m-%d %H:%M') JST"
           git push
