@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>波乗りスキャナー | 商品先物</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f4f6f9;--surface:#eaecf2;--surface2:#e0e4ec;
+  --border:#d4d9e4;--border2:#bec6d4;
+  --accent:#b07d2a;--accent2:#8a6120;
+  --green:#00955a;--green-dim:rgba(0,149,90,.07);--green-border:rgba(0,149,90,.25);
+  --gold:#d4820a;--gold2:#a86408;--gold-dim:rgba(212,130,10,.08);
+  --amber:#c47d00;--red:#d93025;--blue:#1a7fcb;
+  --text:#1a2535;--text2:#455a72;--text3:#8a9db8;
+  --mono:'JetBrains Mono',monospace;--sans:'Noto Sans JP',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-tap-highlight-color:transparent;overflow:hidden;font-size:14px}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto;background:var(--bg);overflow:hidden}
+
+/* HEADER */
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:7px 16px 5px;flex-shrink:0}
+.hdr-inner{display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.18em;color:var(--accent)}
+.logo-sub{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.rule-chip{background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:2px 7px;font-size:9px;font-weight:700;color:var(--accent)}
+.updated{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px}
+.hdr-reload{font-size:14px;color:var(--text3);background:none;border:1px solid var(--border2);border-radius:3px;cursor:pointer;padding:4px 8px;line-height:1;transition:all .15s;flex-shrink:0}
+.hdr-reload:hover{color:var(--accent);border-color:var(--accent)}
+
+/* TF BAR */
+.tf-bar{display:flex;align-items:center;gap:8px;padding:5px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+.tf-label{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.1em}
+.tf-btns{display:flex;gap:4px}
+.tf-btn{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:3px;border:1px solid var(--border2);background:var(--surface);color:var(--text3);cursor:pointer;transition:all .15s}
+.tf-btn.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.tf-note{font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:auto}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+.stat{padding:5px 0;text-align:center;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.stat-n{font-family:var(--mono);font-size:16px;font-weight:700;line-height:1;margin-bottom:2px}
+.stat-l{font-size:8px;color:var(--text3);letter-spacing:.06em;font-family:var(--mono)}
+
+/* TABS */
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;padding:0 12px;overflow-x:auto}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:5px 10px;font-size:10px;font-weight:700;font-family:var(--mono);letter-spacing:.07em;text-transform:uppercase;cursor:pointer;border:none;background:transparent;color:var(--text3);border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;margin-bottom:-1px;flex-shrink:0}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* LIST */
+.list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
+.list::-webkit-scrollbar{width:3px}
+.list::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* STOCK ROW — 2段コンパクト */
+.srow{display:flex;flex-direction:column;padding:5px 12px 4px;background:var(--bg);border-bottom:1px solid var(--border);border-left:2px solid transparent;transition:background .1s}
+.srow:active{background:var(--surface)}
+.srow.gc    {border-left-color:var(--green);background:var(--green-dim)}
+.srow.rank-s{border-left-color:var(--gold);background:var(--gold-dim)}
+.srow.rank-a{border-left-color:#f5c842;background:rgba(200,160,30,.06)}
+.srow.rank-b{border-left-color:var(--blue);background:rgba(26,127,203,.04)}
+.srow.hold  {border-left-color:var(--accent);background:rgba(176,125,42,.04)}
+.sr-main{display:flex;align-items:center;gap:6px}
+.sr-rank{font-family:var(--mono);font-size:9px;font-weight:700;width:20px;text-align:center;flex-shrink:0}
+.sr-code{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text2);width:46px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-name{font-size:11px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sr-price{font-family:var(--mono);font-size:12px;font-weight:700;flex-shrink:0;text-align:right;width:80px}
+.sr-sub{font-family:var(--mono);font-size:8px;color:var(--text3);flex-shrink:0;width:28px;text-align:right}
+.sr-meta{display:flex;gap:10px;margin-top:2px;padding-left:26px}
+.sr-mi{font-family:var(--mono);font-size:9px;color:var(--text3)}
+.sr-mi b{font-weight:700}
+
+/* PULSE */
+@keyframes gc-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,.4)}50%{box-shadow:0 0 0 5px rgba(0,230,118,0)}}
+.srow.gc .sr-rank{animation:gc-pulse 2s infinite;border-radius:2px}
+
+/* EMPTY / LOADING */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 30px;text-align:center;height:100%}
+.empty-code{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text3);letter-spacing:.1em;margin-bottom:14px;line-height:1.4}
+.empty-title{font-size:14px;font-weight:500;color:var(--text2);margin-bottom:8px}
+.empty-sub{font-family:var(--mono);font-size:10px;color:var(--text3);line-height:1.9;letter-spacing:.04em}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="hdr">
+    <div class="hdr-inner">
+      <div>
+        <div class="logo">波乗りスキャナー</div>
+        <div class="logo-sub">
+          <span>商品先物 · MA5 ✕ MA10</span>
+          <span class="rule-chip">AUTO UPDATE</span>
+          <span id="mktRegime" style="font-size:9px;font-weight:700;font-family:var(--mono)"></span>
+        </div>
+      </div>
+      <button class="hdr-reload" onclick="loadData()" title="データを再読み込み">↻</button>
+    </div>
+    <div class="updated" id="updatedAt">データ読み込み中...</div>
+  </div>
+
+  <!-- 足種 -->
+  <div class="tf-bar">
+    <div class="tf-label">足種</div>
+    <div class="tf-btns">
+      <button class="tf-btn on" onclick="setTF('1d',this)">日足</button>
+      <button class="tf-btn"    onclick="setTF('1wk',this)">週足</button>
+      <button class="tf-btn"    onclick="setTF('1mo',this)">月足</button>
+    </div>
+    <div class="tf-note" id="tfNote">MA5=5日 / MA10=10日</div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats" id="stats">
+    <div class="stat"><div class="stat-n" id="stGC" style="color:var(--green)">—</div><div class="stat-l">GC 本日</div></div>
+    <div class="stat"><div class="stat-n" id="stS"  style="color:var(--gold)">—</div><div class="stat-l">RANK S</div></div>
+    <div class="stat"><div class="stat-n" id="stA"  style="color:#f5c842">—</div><div class="stat-l">RANK A</div></div>
+    <div class="stat"><div class="stat-n" id="stHold" style="color:var(--accent)">—</div><div class="stat-l">MA5上</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab on" onclick="setFilter('all',this)">ALL</button>
+    <button class="tab"    onclick="setFilter('gc',this)">GC 本日</button>
+    <button class="tab"    onclick="setFilter('s',this)">S ランク</button>
+    <button class="tab"    onclick="setFilter('a',this)">A ランク</button>
+    <button class="tab"    onclick="setFilter('b',this)">B ランク</button>
+    <button class="tab"    onclick="setFilter('hold',this)">MA5上</button>
+  </div>
+
+  <!-- LIST -->
+  <div class="list" id="list">
+    <div class="empty">
+      <div class="empty-code">LOADING</div>
+      <div class="empty-title">データ読み込み中</div>
+      <div class="empty-sub">results/commodities.json を取得しています</div>
+    </div>
+  </div>
+
+</div>
+<script>
+let allData = {};
+let currentTF = '1d';
+let currentFilter = 'all';
+
+const TF_NOTES = {
+  '1d':  'MA5=5日 / MA10=10日',
+  '1wk': 'MA5=5週 / MA10=10週',
+  '1mo': 'MA5=5ヶ月 / MA10=10ヶ月',
+};
+
+// 価格の適切な小数桁数を決定（商品ごとに桁数が違うため）
+function fmtPrice(v) {
+  if (v == null) return '—';
+  if (v >= 1000) return v.toFixed(1);
+  if (v >= 10)   return v.toFixed(2);
+  return v.toFixed(3);
+}
+function fmtSlope(v) {
+  if (v == null) return '0';
+  const a = Math.abs(v);
+  if (a >= 100) return a.toFixed(1);
+  if (a >= 1)   return a.toFixed(2);
+  return a.toFixed(3);
+}
+
+// ── データ読み込み ──
+async function loadData() {
+  document.getElementById('updatedAt').textContent = '読み込み中...';
+  try {
+    const res = await fetch(`results/commodities.json?t=${Date.now()}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    allData = json.timeframes || {};
+    document.getElementById('updatedAt').textContent = `最終スキャン: ${json.generated_at || '不明'}`;
+    // 相場レジーム表示
+    const regime = json.market_regime;
+    if (regime) {
+      const el = document.getElementById('mktRegime');
+      el.textContent = regime.bullish ? '市場↑' : '市場⚠';
+      el.style.color = regime.bullish ? 'var(--green)' : 'var(--amber)';
+      el.title = regime.detail || '';
+    }
+    render();
+  } catch(e) {
+    document.getElementById('updatedAt').textContent = 'データ未取得（GitHub Actionsを実行してください）';
+    document.getElementById('list').innerHTML = `
+      <div class="empty">
+        <div class="empty-code">NO DATA</div>
+        <div class="empty-title">データファイルが見つかりません</div>
+        <div class="empty-sub">
+          GitHub Actions を手動実行して<br>
+          results/commodities.json を生成してください<br><br>
+          Actions → scan.yml → Run workflow
+        </div>
+      </div>`;
+  }
+}
+
+// ── 足種切り替え ──
+function setTF(tf, el) {
+  currentTF = tf;
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('tfNote').textContent = TF_NOTES[tf];
+  render();
+}
+
+// ── フィルター ──
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  render();
+}
+
+// ── 描画 ──
+function render() {
+  const results = allData[currentTF] || [];
+
+  const gc   = results.filter(r => r.gc_today).length;
+  const s    = results.filter(r => r.rank === 'S').length;
+  const a    = results.filter(r => r.rank === 'A').length;
+  const hold = results.filter(r => r.ma5_above && !r.gc_today).length;
+  document.getElementById('stGC').textContent   = gc;
+  document.getElementById('stS').textContent    = s;
+  document.getElementById('stA').textContent    = a;
+  document.getElementById('stHold').textContent = hold;
+
+  let data = [...results];
+  if (currentFilter === 'gc')   data = data.filter(r => r.gc_today);
+  if (currentFilter === 's')    data = data.filter(r => r.rank === 'S');
+  if (currentFilter === 'a')    data = data.filter(r => r.rank === 'A');
+  if (currentFilter === 'b')    data = data.filter(r => r.rank === 'B');
+  if (currentFilter === 'hold') data = data.filter(r => r.ma5_above && !r.gc_today);
+
+  if (data.length === 0) {
+    document.getElementById('list').innerHTML = `
+      <div class="empty">
+        <div class="empty-code">—</div>
+        <div class="empty-title">該当銘柄なし</div>
+        <div class="empty-sub">フィルターを変更してください</div>
+      </div>`;
+    return;
+  }
+
+  const rankOrder = {GC:0,S:1,A:2,B:3,C:4};
+  data.sort((a, b) => {
+    if (a.gc_today && !b.gc_today) return -1;
+    if (!a.gc_today && b.gc_today) return 1;
+    const ro = (rankOrder[a.rank]||9) - (rankOrder[b.rank]||9);
+    if (ro !== 0) return ro;
+    return (b.score||0) - (a.score||0);
+  });
+
+  const el = document.getElementById('list');
+  el.innerHTML = data.map(r => {
+    const isGC   = r.gc_today;
+    const isS    = r.rank === 'S';
+    const isA    = r.rank === 'A';
+    const isB    = r.rank === 'B';
+    const isHold = r.ma5_above && !r.gc_today;
+
+    const rowCls   = isGC ? 'gc' : isS ? 'rank-s' : isA ? 'rank-a' : isB ? 'rank-b' : isHold ? 'hold' : '';
+    const barCol   = isGC ? 'var(--green)' : isS ? 'var(--gold)' : isA ? '#d4820a' : isB ? 'var(--blue)' : 'var(--text3)';
+    const diffSign = (r.diff_pct || 0) >= 0 ? '+' : '';
+    const subText  = isGC ? '●' : r.est_days ? `→${r.est_days}日` : r.is_conv ? '収束' : r.is_accel ? '加速' : '';
+    const arrow    = v => v > 0 ? '↑' : v < 0 ? '↓' : '→';
+    const sc       = v => v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--text3)';
+    const shortCode = r.code.replace('=F', '');
+
+    return `<div class="srow ${rowCls}">
+      <div class="sr-main">
+        <div class="sr-rank" style="color:${barCol}">${isGC ? 'GC' : (r.rank||'C')}</div>
+        <div class="sr-code">${shortCode}</div>
+        <div class="sr-name">${r.name}</div>
+        <div class="sr-price" style="color:${barCol}">$${fmtPrice(r.close)}</div>
+        <div class="sr-sub">${subText}</div>
+      </div>
+      <div class="sr-meta">
+        <div class="sr-mi">MA5 <b style="color:${sc(r.ma5_slope)}">${arrow(r.ma5_slope)}$${fmtSlope(r.ma5_slope)}</b></div>
+        <div class="sr-mi">MA10 <b style="color:${sc(r.ma10_slope)}">${arrow(r.ma10_slope)}$${fmtSlope(r.ma10_slope)}</b></div>
+        <div class="sr-mi">乖離 <b style="color:${barCol}">${diffSign}${(r.diff_pct||0).toFixed(2)}%</b></div>
+        ${r.vol_ratio != null ? `<div class="sr-mi">出来高 <b style="color:${r.vol_confirmed ? 'var(--green)' : 'var(--text3)'}">×${r.vol_ratio.toFixed(1)}</b></div>` : ''}
+        ${r.weekly_aligned ? '<div class="sr-mi"><b style="color:var(--green)">週足↑</b></div>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// 起動
+loadData();
+</script>
+</body>
+</html>

@@ -29,6 +29,9 @@ jobs:
       - name: SP500 スキャン実行
         run: python scan_sp500.py
 
+      - name: 商品先物 スキャン実行
+        run: python scan_commodities.py
+
       - name: HTML図解スクリーンショット撮影
         run: python screenshot.py
 
