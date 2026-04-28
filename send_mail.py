@@ -80,12 +80,16 @@ def send_email(api_key: str, to_email: str, subject: str, html_body: str, attach
         "attachments": attachments,
     }
 
+    # ★UTF-8で確実にエンコード
+    body_bytes = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+
     req = urllib.request.Request(
         url,
-        data=json.dumps(payload).encode("utf-8"),
+        data=body_bytes,
         headers={
             "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
+            "Content-Type": "application/json; charset=utf-8",
+            "Content-Length": str(len(body_bytes)),
         },
         method="POST",
     )
@@ -96,7 +100,7 @@ def send_email(api_key: str, to_email: str, subject: str, html_body: str, attach
             print(f"  ✅ メール送信成功: {response.get('id', '')}")
             return True
     except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8")
+        body = e.read().decode("utf-8", errors="replace")
         print(f"  ❌ メール送信失敗 ({e.code}): {body}")
         return False
     except Exception as e:
@@ -145,7 +149,7 @@ def main():
 
     total_signals = jpx_gc + jpx_s + jpx_a + sp_gc + sp_s + sp_a
 
-    # シグナルがない日は送信スキップ（オプション）
+    # シグナルがない日は送信スキップ
     if total_signals == 0:
         print("ℹ️ 本日のシグナルなし。メール送信をスキップします。")
         return
