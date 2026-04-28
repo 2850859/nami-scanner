@@ -197,11 +197,12 @@ def analyze(prices):
     elif abs_pct <= 1.5: score += 22
     elif abs_pct <= 3.0: score += 12
     elif abs_pct <= 5.0: score += 5
-    if is_conv:    score += 15
-    if is_accel:   score += 15
-    if ma5_rising: score += 15
-    if ma5_faster: score += 15
-    if gc_today:   score = 0
+    if is_conv:        score += 15
+    if is_accel:       score += 15
+    if ma5_rising:     score += 15
+    if ma5_faster:     score += 15
+    if ma10_slope > 0: score += 10  # MA10も上昇中
+    if gc_today:       score = 0
 
     rank = "GC" if gc_today else "S" if score >= 75 else "A" if score >= 50 else "B" if score >= 30 else "C"
 
@@ -234,7 +235,7 @@ def fetch_closes(ticker, period, interval):
         print(f"  ⚠ {ticker}: {e}")
         return None
 
-def scan_all(timeframe):
+def scan_all(timeframe, weekly_lookup: dict | None = None):
     cfg = {
         "1d":  {"period": "3mo",  "interval": "1d"},
         "1wk": {"period": "2y",   "interval": "1wk"},
@@ -252,8 +253,19 @@ def scan_all(timeframe):
             continue
         sig = analyze(closes)
         if sig:
+            # 週足整合フィルター：週足でも MA5 > MA10 なら +15点
+            weekly_aligned = weekly_lookup.get(code, False) if weekly_lookup else None
+            if weekly_aligned and not sig["gc_today"]:
+                sig["score"] += 15
+                sig["rank"] = (
+                    "S" if sig["score"] >= 75 else
+                    "A" if sig["score"] >= 50 else
+                    "B" if sig["score"] >= 30 else "C"
+                )
+            sig["weekly_aligned"] = weekly_aligned
             results.append({"code": code, "name": name, **sig})
-            print(f"rank={sig['rank']} gc={sig['gc_today']} score={sig['score']}")
+            wa = "W✓" if weekly_aligned else ""
+            print(f"rank={sig['rank']} gc={sig['gc_today']} score={sig['score']} {wa}")
         else:
             print("no data")
         time.sleep(0.3)
@@ -270,15 +282,24 @@ def main():
         "timeframes": {}
     }
 
-    for tf in ["1d", "1wk", "1mo"]:
+    # 週足を先にスキャンして lookup を構築（日足の週足整合フィルターに使用）
+    print(f"\n{'='*50}")
+    print(f"S&P500 週足スキャン開始 ({now_str})")
+    print(f"{'='*50}")
+    wk_results = scan_all("1wk")
+    weekly_lookup = {r["code"]: r.get("ma5_above", False) for r in wk_results}
+    output["timeframes"]["1wk"] = wk_results
+
+    for tf in ["1d", "1mo"]:
         print(f"\n{'='*50}")
         print(f"S&P500 スキャン開始: {tf} ({now_str})")
         print(f"{'='*50}")
-        results = scan_all(tf)
+        results = scan_all(tf, weekly_lookup=weekly_lookup if tf == "1d" else None)
         output["timeframes"][tf] = results
         gc     = [r for r in results if r["gc_today"]]
         rank_s = [r for r in results if r["rank"] == "S"]
-        print(f"\n  GC本日: {len(gc)}件  Sランク: {len(rank_s)}件  合計: {len(results)}件")
+        wa     = [r for r in results if r.get("weekly_aligned")]
+        print(f"\n  GC本日: {len(gc)}件  Sランク: {len(rank_s)}件  週足整合: {len(wa)}件  合計: {len(results)}件")
 
     with open("results/sp500.json", "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)

@@ -263,6 +263,7 @@ function render() {
         <div class="sr-mi">MA5 <b style="color:${sc(r.ma5_slope)}">${arrow(r.ma5_slope)}${Math.abs(r.ma5_slope||0).toFixed(0)}円</b></div>
         <div class="sr-mi">MA10 <b style="color:${sc(r.ma10_slope)}">${arrow(r.ma10_slope)}${Math.abs(r.ma10_slope||0).toFixed(0)}円</b></div>
         <div class="sr-mi">乖離 <b style="color:${barCol}">${diffSign}${(r.diff_pct||0).toFixed(2)}%</b></div>
+        ${r.weekly_aligned ? '<div class="sr-mi"><b style="color:var(--green)">週足↑</b></div>' : ''}
       </div>
     </div>`;
   }).join('');
