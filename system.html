@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>波乗りスキャナー | システム図解</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Noto Sans JP', sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .grad-hero { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f2444 100%); }
+  .grad-gold { background: linear-gradient(135deg, #92400e, #d97706); }
+  .grad-green { background: linear-gradient(135deg, #064e3b, #059669); }
+  .card { background: white; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
+  .dot-filled { color: #22c55e; }
+  .dot-empty  { color: #cbd5e1; }
+  .pulse { animation: pulse 2s infinite; }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+    50%      { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+  }
+  .step-connector {
+    width: 2px; height: 32px; background: #e2e8f0;
+    margin: 0 auto;
+  }
+  .ma-bar { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  .ma-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; width: 44px; flex-shrink: 0; }
+  .ma-line { flex: 1; height: 3px; border-radius: 2px; }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- ===== HERO ===== -->
+<section class="grad-hero text-white py-14 px-4 text-center">
+  <div class="mono text-xs tracking-widest text-blue-300 mb-3">NAMI-SCANNER · SYSTEM GUIDE</div>
+  <h1 class="text-3xl font-black mb-3 leading-tight">
+    波乗りスキャナー<br>
+    <span class="text-yellow-300">システム図解</span>
+  </h1>
+  <p class="text-slate-300 text-sm max-w-sm mx-auto leading-relaxed">
+    向川式「波乗りトレード」に基づく<br>
+    6本移動平均線 × パーフェクトオーダー判定
+  </p>
+  <div class="mt-6 inline-block bg-white/10 border border-white/20 rounded-lg px-6 py-3">
+    <div class="mono text-xs text-slate-300 mb-1">対象市場</div>
+    <div class="flex gap-4 text-sm font-bold">
+      <span class="text-blue-300">🇯🇵 JPX400</span>
+      <span class="text-red-300">🇺🇸 S&P500</span>
+      <span class="text-yellow-300">🏅 商品先物</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CORE CONCEPT ===== -->
+<section class="max-w-2xl mx-auto px-4 py-12">
+  <div class="text-center mb-8">
+    <div class="mono text-xs text-slate-400 tracking-widest mb-2">CORE CONCEPT</div>
+    <h2 class="text-xl font-black">パーフェクトオーダーとは？</h2>
+  </div>
+
+  <div class="card p-6 mb-6">
+    <p class="text-sm text-slate-600 mb-5 leading-relaxed">
+      移動平均線が「速い順」に上から並んだ状態。<br>
+      全ての波が同じ方向に向かっている＝強い上昇トレンドのサイン。
+    </p>
+
+    <!-- MA積み上げ図 -->
+    <div class="bg-slate-50 rounded-xl p-5 mb-4">
+      <div class="text-center mono text-xs text-slate-400 mb-4">ローソク足（株価）</div>
+      <div class="text-center text-2xl mb-2">📊</div>
+      <div class="text-center mono text-xs font-bold text-slate-400 mb-4">↓ 下に行くほど「遅い波」</div>
+
+      <div class="space-y-2 max-w-xs mx-auto">
+        <div class="flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-2">
+          <div class="mono text-xs font-black text-green-700 w-12">MA5</div>
+          <div class="flex-1 h-2 bg-green-400 rounded"></div>
+          <div class="mono text-xs text-green-600">5日平均</div>
+        </div>
+        <div class="text-center text-slate-300 text-xs">↓ MA5 ＞</div>
+        <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2">
+          <div class="mono text-xs font-black text-emerald-700 w-12">MA10</div>
+          <div class="flex-1 h-2 bg-emerald-400 rounded"></div>
+          <div class="mono text-xs text-emerald-600">10日平均</div>
+        </div>
+        <div class="text-center text-slate-300 text-xs">↓ MA10 ＞</div>
+        <div class="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+          <div class="mono text-xs font-black text-blue-700 w-12">MA20</div>
+          <div class="flex-1 h-2 bg-blue-400 rounded"></div>
+          <div class="mono text-xs text-blue-600">20日平均</div>
+        </div>
+        <div class="text-center text-slate-300 text-xs">↓ MA20 ＞</div>
+        <div class="flex items-center gap-3 bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-2">
+          <div class="mono text-xs font-black text-indigo-700 w-12">MA50</div>
+          <div class="flex-1 h-2 bg-indigo-400 rounded"></div>
+          <div class="mono text-xs text-indigo-600">50日平均</div>
+        </div>
+        <div class="text-center text-slate-300 text-xs">↓ MA50 ＞</div>
+        <div class="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-lg px-4 py-2">
+          <div class="mono text-xs font-black text-purple-700 w-12">MA100</div>
+          <div class="flex-1 h-2 bg-purple-400 rounded"></div>
+          <div class="mono text-xs text-purple-600">100日平均</div>
+        </div>
+        <div class="text-center text-slate-300 text-xs">↓ MA100 ＞</div>
+        <div class="flex items-center gap-3 bg-slate-100 border border-slate-300 rounded-lg px-4 py-2">
+          <div class="mono text-xs font-black text-slate-700 w-12">MA200</div>
+          <div class="flex-1 h-2 bg-slate-400 rounded"></div>
+          <div class="mono text-xs text-slate-600">200日平均</div>
+        </div>
+      </div>
+
+      <div class="mt-5 text-center">
+        <span class="bg-green-100 text-green-800 font-black text-sm px-4 py-2 rounded-full">
+          ✅ これがパーフェクトオーダー！
+        </span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+        <div class="text-2xl mb-1">🟢</div>
+        <div class="font-bold text-green-800 text-sm">5ペア全整列</div>
+        <div class="mono text-xs text-green-600">●●●●● = 最強</div>
+      </div>
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+        <div class="text-2xl mb-1">🔴</div>
+        <div class="font-bold text-slate-600 text-sm">整列なし</div>
+        <div class="mono text-xs text-slate-400">○○○○○ = 弱い</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SCAN FLOW ===== -->
+<section class="bg-white py-12 px-4">
+  <div class="max-w-2xl mx-auto">
+    <div class="text-center mb-8">
+      <div class="mono text-xs text-slate-400 tracking-widest mb-2">SCAN FLOW</div>
+      <h2 class="text-xl font-black">毎日のスキャン手順</h2>
+    </div>
+
+    <div class="space-y-2">
+      <!-- Step 1 -->
+      <div class="card border-l-4 border-blue-500 p-4 flex gap-4 items-start">
+        <div class="mono font-black text-blue-500 text-lg w-8 flex-shrink-0">01</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm mb-1">相場全体トレンド確認</div>
+          <div class="text-xs text-slate-500 leading-relaxed">
+            日経225 or S&P500 の MA20 vs MA50 を比較<br>
+            <span class="text-green-600 font-bold">MA20 ＞ MA50 → 市場↑（強気）</span>
+            <span class="text-slate-400 mx-2">|</span>
+            <span class="text-orange-600 font-bold">MA20 ＜ MA50 → 市場⚠（警戒）</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-connector"></div>
+
+      <!-- Step 2 -->
+      <div class="card border-l-4 border-emerald-500 p-4 flex gap-4 items-start">
+        <div class="mono font-black text-emerald-500 text-lg w-8 flex-shrink-0">02</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm mb-1">週足スキャン → 週足整合チェック</div>
+          <div class="text-xs text-slate-500 leading-relaxed">
+            週足で MA5・MA10・MA20 が整列しているか確認<br>
+            週足でも整列（整列2ペア以上）→ <span class="text-green-600 font-bold">週足↑ フラグ</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-connector"></div>
+
+      <!-- Step 3 -->
+      <div class="card border-l-4 border-yellow-500 p-4 flex gap-4 items-start">
+        <div class="mono font-black text-yellow-600 text-lg w-8 flex-shrink-0">03</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm mb-1">日足スキャン（全銘柄）</div>
+          <div class="text-xs text-slate-500 leading-relaxed">
+            各銘柄の 1年分のデータで 6本のMAを計算<br>
+            MA5・MA10・MA20・MA50・MA100・MA200 の整列を判定
+          </div>
+        </div>
+      </div>
+
+      <div class="step-connector"></div>
+
+      <!-- Step 4 -->
+      <div class="card border-l-4 border-purple-500 p-4 flex gap-4 items-start">
+        <div class="mono font-black text-purple-500 text-lg w-8 flex-shrink-0">04</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm mb-1">スコアリング → ランキング</div>
+          <div class="text-xs text-slate-500">整列・上昇・出来高などを点数化してGC/S/A/B/Cに分類</div>
+        </div>
+      </div>
+
+      <div class="step-connector"></div>
+
+      <!-- Step 5 -->
+      <div class="card border-l-4 border-slate-400 p-4 flex gap-4 items-start">
+        <div class="mono font-black text-slate-400 text-lg w-8 flex-shrink-0">05</div>
+        <div class="flex-1">
+          <div class="font-bold text-sm mb-1">メール送信 + ダッシュボード更新</div>
+          <div class="text-xs text-slate-500">結果をCSVとスクリーンショットで自動配信。GitHub Pagesも更新</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SCORING ===== -->
+<section class="max-w-2xl mx-auto px-4 py-12">
+  <div class="text-center mb-8">
+    <div class="mono text-xs text-slate-400 tracking-widest mb-2">SCORING</div>
+    <h2 class="text-xl font-black">スコアの計算方法</h2>
+  </div>
+
+  <div class="card p-5">
+    <div class="space-y-3">
+
+      <div class="flex items-center justify-between py-2 border-b border-slate-100">
+        <div>
+          <div class="font-bold text-sm text-green-700">MA整列ボーナス</div>
+          <div class="text-xs text-slate-500">整列1ペアごとに加点（最大5ペア）</div>
+        </div>
+        <div class="mono font-black text-green-600 text-lg">+10 × 5</div>
+      </div>
+
+      <div class="flex items-center justify-between py-2 border-b border-slate-100">
+        <div>
+          <div class="font-bold text-sm text-blue-700">MA上昇ボーナス</div>
+          <div class="text-xs text-slate-500">上昇中のMAが1本ごとに加点（最大6本）</div>
+        </div>
+        <div class="mono font-black text-blue-600 text-lg">+3 × 6</div>
+      </div>
+
+      <div class="flex items-center justify-between py-2 border-b border-slate-100">
+        <div>
+          <div class="font-bold text-sm text-indigo-700">MA200より上</div>
+          <div class="text-xs text-slate-500">株価がMA200を上回っている（長期強気）</div>
+        </div>
+        <div class="mono font-black text-indigo-600 text-lg">+10</div>
+      </div>
+
+      <div class="flex items-center justify-between py-2 border-b border-slate-100">
+        <div>
+          <div class="font-bold text-sm text-purple-700">MA50より上</div>
+          <div class="text-xs text-slate-500">株価がMA50を上回っている（中期強気）</div>
+        </div>
+        <div class="mono font-black text-purple-600 text-lg">+5</div>
+      </div>
+
+      <div class="flex items-center justify-between py-2 border-b border-slate-100">
+        <div>
+          <div class="font-bold text-sm text-yellow-700">押し目チャンス 🎯</div>
+          <div class="text-xs text-slate-500">株価がMAの±2%以内 かつ 整列3以上</div>
+        </div>
+        <div class="mono font-black text-yellow-600 text-lg">+15</div>
+      </div>
+
+      <div class="flex items-center justify-between py-2 border-b border-slate-100">
+        <div>
+          <div class="font-bold text-sm text-emerald-700">ゴールデンクロス</div>
+          <div class="text-xs text-slate-500">MA5がMA10を上抜け かつ 整列2以上</div>
+        </div>
+        <div class="mono font-black text-emerald-600 text-lg">+10</div>
+      </div>
+
+      <div class="flex items-center justify-between py-2">
+        <div>
+          <div class="font-bold text-sm text-orange-700">出来高急増 📈</div>
+          <div class="text-xs text-slate-500">当日出来高 ÷ 直近20日平均 ≥ 1.5倍</div>
+        </div>
+        <div class="mono font-black text-orange-600 text-lg">+10</div>
+      </div>
+
+    </div>
+
+    <div class="mt-4 bg-slate-50 rounded-xl p-4">
+      <div class="mono text-xs text-slate-400 mb-2">最高スコア例（完全整列 + 全上昇 + 200上 + 50上 + 押し目 + GC + 出来高）</div>
+      <div class="font-black text-2xl text-green-600">50 + 18 + 10 + 5 + 15 + 10 + 10 = <span class="text-3xl">118点</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== RANKING ===== -->
+<section class="bg-white py-12 px-4">
+  <div class="max-w-2xl mx-auto">
+    <div class="text-center mb-8">
+      <div class="mono text-xs text-slate-400 tracking-widest mb-2">RANKING</div>
+      <h2 class="text-xl font-black">ランク判定基準</h2>
+    </div>
+
+    <div class="space-y-3">
+
+      <!-- GC -->
+      <div class="rounded-xl overflow-hidden border-2 border-green-400 pulse">
+        <div class="grad-green text-white px-5 py-3 flex items-center gap-3">
+          <div class="mono font-black text-2xl">GC</div>
+          <div>
+            <div class="font-bold text-sm">ゴールデンクロス確定</div>
+            <div class="text-green-200 text-xs">本物のGC = 整列が整った状態でのクロス</div>
+          </div>
+        </div>
+        <div class="bg-green-50 px-5 py-3">
+          <div class="flex gap-4 text-xs">
+            <div class="flex items-center gap-1"><span class="text-green-500 font-bold">✅</span> MA5がMA10を上抜け（当日）</div>
+            <div class="flex items-center gap-1"><span class="text-green-500 font-bold">✅</span> MA整列が3ペア以上</div>
+          </div>
+          <div class="mt-2 mono text-xs text-green-600">例: ●●●○○ 以上 ＋ GC → 本物</div>
+          <div class="mono text-xs text-red-400 mt-1">例: ●○○○○ ＋ GC → GCランクにならない（短期のダマシ）</div>
+        </div>
+      </div>
+
+      <!-- S -->
+      <div class="rounded-xl overflow-hidden border border-yellow-400">
+        <div class="grad-gold text-white px-5 py-3 flex items-center gap-3">
+          <div class="mono font-black text-2xl">S</div>
+          <div>
+            <div class="font-bold text-sm">最高水準 スーパー銘柄</div>
+            <div class="text-yellow-200 text-xs">スコア 80点以上</div>
+          </div>
+        </div>
+        <div class="bg-yellow-50 px-5 py-3">
+          <div class="mono text-xs text-yellow-700">●●●●● 完全整列 + 全MA上昇 → Sランク確定水準</div>
+        </div>
+      </div>
+
+      <!-- A -->
+      <div class="rounded-xl overflow-hidden border border-yellow-300">
+        <div class="bg-amber-500 text-white px-5 py-3 flex items-center gap-3">
+          <div class="mono font-black text-2xl">A</div>
+          <div>
+            <div class="font-bold text-sm">優良 買い候補</div>
+            <div class="text-amber-100 text-xs">スコア 60〜79点</div>
+          </div>
+        </div>
+        <div class="bg-amber-50 px-5 py-3">
+          <div class="mono text-xs text-amber-700">●●●●○ 4ペア整列 + 大半が上昇 → Aランク水準</div>
+        </div>
+      </div>
+
+      <!-- B -->
+      <div class="rounded-xl overflow-hidden border border-blue-300">
+        <div class="bg-blue-500 text-white px-5 py-3 flex items-center gap-3">
+          <div class="mono font-black text-2xl">B</div>
+          <div>
+            <div class="font-bold text-sm">注目 様子見</div>
+            <div class="text-blue-100 text-xs">スコア 40〜59点</div>
+          </div>
+        </div>
+        <div class="bg-blue-50 px-5 py-3">
+          <div class="mono text-xs text-blue-700">●●●○○ 3ペア整列 → Bランク水準</div>
+        </div>
+      </div>
+
+      <!-- C -->
+      <div class="rounded-xl overflow-hidden border border-slate-200">
+        <div class="bg-slate-400 text-white px-5 py-3 flex items-center gap-3">
+          <div class="mono font-black text-2xl">C</div>
+          <div>
+            <div class="font-bold text-sm">弱い / 待機</div>
+            <div class="text-slate-100 text-xs">スコア 39点以下</div>
+          </div>
+        </div>
+        <div class="bg-slate-50 px-5 py-3">
+          <div class="mono text-xs text-slate-500">●●○○○ 以下 → トレンド未形成</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== FILTERS ===== -->
+<section class="max-w-2xl mx-auto px-4 py-12">
+  <div class="text-center mb-8">
+    <div class="mono text-xs text-slate-400 tracking-widest mb-2">FILTERS</div>
+    <h2 class="text-xl font-black">勝率を高める4つのフィルター</h2>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4">
+
+    <div class="card p-5 flex gap-4 items-start">
+      <div class="text-3xl flex-shrink-0">📊</div>
+      <div class="flex-1">
+        <div class="font-bold mb-1">①週足整合フィルター <span class="ml-2 bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">+15点</span></div>
+        <div class="text-sm text-slate-500 leading-relaxed">
+          週足チャートでもMA5・MA10・MA20が整列していれば、<br>
+          「日足だけでなく週足でも上昇」→ スコア+15点
+        </div>
+        <div class="mt-2 mono text-xs bg-slate-50 rounded-lg px-3 py-2 text-slate-600">
+          週足整列2ペア以上 → 「週足↑」表示
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5 flex gap-4 items-start">
+      <div class="text-3xl flex-shrink-0">📈</div>
+      <div class="flex-1">
+        <div class="font-bold mb-1">②出来高フィルター <span class="ml-2 bg-orange-100 text-orange-700 text-xs px-2 py-0.5 rounded-full">+10点</span></div>
+        <div class="text-sm text-slate-500 leading-relaxed">
+          当日の出来高 ÷ 直近20日平均 ≥ 1.5倍<br>
+          → 機関投資家が動いているサイン
+        </div>
+        <div class="mt-2 mono text-xs bg-slate-50 rounded-lg px-3 py-2 text-slate-600">
+          出来高×1.5以上 → 「×2.1」など緑色で表示
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5 flex gap-4 items-start">
+      <div class="text-3xl flex-shrink-0">🌏</div>
+      <div class="flex-1">
+        <div class="font-bold mb-1">③相場全体フィルター <span class="ml-2 bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">-20点（警戒時）</span></div>
+        <div class="text-sm text-slate-500 leading-relaxed">
+          指数（日経225 / S&P500）のMA20 vs MA50を確認<br>
+          市場が下降トレンドなら個別銘柄を減点
+        </div>
+        <div class="mt-2 mono text-xs bg-slate-50 rounded-lg px-3 py-2">
+          <span class="text-green-600">市場↑</span> → そのまま
+          <span class="mx-3 text-slate-300">|</span>
+          <span class="text-orange-600">市場⚠</span> → 全銘柄スコア-20点
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5 flex gap-4 items-start">
+      <div class="text-3xl flex-shrink-0">🎯</div>
+      <div class="flex-1">
+        <div class="font-bold mb-1">④押し目フィルター <span class="ml-2 bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full">+15点</span></div>
+        <div class="text-sm text-slate-500 leading-relaxed">
+          株価がMAの±2%以内で接触中 かつ 整列3ペア以上<br>
+          → 「押し目買い」の最高のタイミング
+        </div>
+        <div class="mt-2 mono text-xs bg-slate-50 rounded-lg px-3 py-2 text-slate-600">
+          「押MA5」「押MA20」などで表示
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===== IDEAL SCENARIO ===== -->
+<section class="bg-slate-900 text-white py-12 px-4">
+  <div class="max-w-2xl mx-auto">
+    <div class="text-center mb-8">
+      <div class="mono text-xs text-blue-300 tracking-widest mb-2">IDEAL SCENARIO</div>
+      <h2 class="text-xl font-black text-yellow-300">最高の買いシグナルとは？</h2>
+    </div>
+
+    <div class="bg-white/10 border border-white/20 rounded-2xl p-6 mb-6">
+      <div class="space-y-3">
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-xs font-black">✓</div>
+          <div class="text-sm">市場全体が <span class="text-green-300 font-bold">上昇トレンド</span>（市場↑）</div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-xs font-black">✓</div>
+          <div class="text-sm">週足でも <span class="text-green-300 font-bold">MA整列2ペア以上</span>（週足↑）</div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-black">✓</div>
+          <div class="text-sm">日足で <span class="text-yellow-300 font-bold">5ペア全整列</span>（●●●●●）</div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-black">✓</div>
+          <div class="text-sm">株価が <span class="text-yellow-300 font-bold">MAに押し目で戻ってきた</span>（±2%）</div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-xs font-black">✓</div>
+          <div class="text-sm"><span class="text-orange-300 font-bold">出来高急増</span>を伴う（×1.5以上）</div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 bg-green-400 rounded-full flex items-center justify-center text-xs font-black">✓</div>
+          <div class="text-sm">その日に <span class="text-green-300 font-bold">ゴールデンクロス</span> 発生</div>
+        </div>
+      </div>
+
+      <div class="mt-6 text-center">
+        <div class="mono text-xs text-slate-400 mb-2">このとき推定スコア</div>
+        <div class="text-4xl font-black text-yellow-300">100点超</div>
+        <div class="mono text-xs text-green-400 mt-1">→ GCランク確定</div>
+      </div>
+    </div>
+
+    <div class="bg-slate-800 rounded-xl p-4 text-center">
+      <div class="mono text-xs text-slate-400 mb-2">ダッシュボードでの見え方</div>
+      <!-- Mock row -->
+      <div class="bg-green-950 border border-green-500 border-l-4 rounded-lg p-3 text-left max-w-xs mx-auto">
+        <div class="flex items-center gap-2 mb-1">
+          <div class="mono text-xs font-black text-green-400">GC</div>
+          <div class="mono text-xs text-slate-300">7203</div>
+          <div class="text-xs text-white flex-1">トヨタ自動車</div>
+          <div class="mono text-xs font-bold text-green-400">¥3,250</div>
+          <div class="mono text-xs text-yellow-400">押MA5</div>
+        </div>
+        <div class="flex gap-2 text-xs">
+          <span class="mono text-green-400" style="letter-spacing:-1px">●●●●●</span>
+          <span class="mono text-slate-400">MA5↑80</span>
+          <span class="mono text-green-400">乖+0.3%</span>
+          <span class="mono text-green-400">出来高×2.1</span>
+          <span class="mono text-green-300 font-bold">週足↑</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MARKET COVERAGE ===== -->
+<section class="max-w-2xl mx-auto px-4 py-12">
+  <div class="text-center mb-8">
+    <div class="mono text-xs text-slate-400 tracking-widest mb-2">MARKET COVERAGE</div>
+    <h2 class="text-xl font-black">スキャン対象市場</h2>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4">
+    <div class="card p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="text-2xl">🇯🇵</div>
+        <div>
+          <div class="font-bold">JPX400</div>
+          <div class="mono text-xs text-slate-400">index.html</div>
+        </div>
+        <div class="ml-auto mono text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">401銘柄</div>
+      </div>
+      <div class="text-xs text-slate-500">東証プライム上場の主要銘柄。毎平日スキャン</div>
+    </div>
+
+    <div class="card p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="text-2xl">🇺🇸</div>
+        <div>
+          <div class="font-bold">S&P500</div>
+          <div class="mono text-xs text-slate-400">sp500.html</div>
+        </div>
+        <div class="ml-auto mono text-xs text-red-600 bg-red-50 px-2 py-1 rounded">300銘柄</div>
+      </div>
+      <div class="text-xs text-slate-500">米国主要企業。テック・金融・ヘルスケアなど全セクター</div>
+    </div>
+
+    <div class="card p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="text-2xl">🏅</div>
+        <div>
+          <div class="font-bold">商品先物</div>
+          <div class="mono text-xs text-slate-400">commodities.html</div>
+        </div>
+        <div class="ml-auto mono text-xs text-yellow-700 bg-yellow-50 px-2 py-1 rounded">22商品</div>
+      </div>
+      <div class="text-xs text-slate-500">金・銀・銅・原油・天然ガス・コーヒー・小麦・大豆など</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="grad-hero text-white py-10 px-4 text-center">
+  <div class="mono text-xs text-blue-300 tracking-widest mb-3">NAMI-SCANNER</div>
+  <div class="font-black text-lg mb-2">波乗りスキャナー</div>
+  <div class="text-slate-400 text-xs">向川式 波乗りトレード ロジック実装版</div>
+  <div class="mt-4 flex justify-center gap-4 text-xs text-slate-400">
+    <a href="index.html" class="hover:text-white transition">JPX400</a>
+    <span>·</span>
+    <a href="sp500.html" class="hover:text-white transition">S&P500</a>
+    <span>·</span>
+    <a href="commodities.html" class="hover:text-white transition">商品先物</a>
+    <span>·</span>
+    <a href="logic.html" class="hover:text-white transition">旧ロジック</a>
+  </div>
+</footer>
+
+</body>
+</html>
