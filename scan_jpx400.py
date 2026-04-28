@@ -294,7 +294,11 @@ def main():
     with open("results/jpx400.json", "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
 
-    print(f"\n✅ results/jpx400.json 保存完了")
+print(f"\n✅ results/jpx400.json 保存完了")
+
+    # ★追加：時系列データとシグナルを蓄積
+    from data_accumulator import append_all
+    append_all("JPX400", output)
 
 if __name__ == "__main__":
     main()
