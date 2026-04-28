@@ -1,5 +1,6 @@
 {
-  "generated_at": "2026-04-28 16:15 JST",
+  "generated_at": "2026-04-28 23:19 JST",
+  "market": "JPX400",
   "timeframes": {
     "1d": [
       {"code":"6758.T","name":"ソニーグループ","close":13250,"ma5":13180,"ma10":13160,"diff_pct":0.15,"gc_today":true,"ma5_above":true,"is_conv":false,"is_accel":true,"ma5_rising":true,"ma5_faster":true,"est_days":null,"score":0,"rank":"GC","ma5_slope":42,"ma10_slope":18},
