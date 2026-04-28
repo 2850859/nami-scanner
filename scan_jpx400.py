@@ -157,90 +157,120 @@ def calc_ma(prices, n):
     return sum(prices[-n:]) / n
 
 def analyze(prices, volumes=None):
-    """MA5/MA10 の GC・予見スコアを計算"""
+    """
+    向川式 波乗りトレード ロジック
+    MA5/10/20/50/100/200 の上昇パーフェクトオーダーと押し目で判断
+    利用可能なデータ量に応じてMAを自動選択
+    """
     if not prices or len(prices) < 12:
         return None
 
-    ma5_t0  = calc_ma(prices, 5)
-    ma10_t0 = calc_ma(prices, 10)
-    prev    = prices[:-1]
-    ma5_t1  = calc_ma(prev, 5)
-    ma10_t1 = calc_ma(prev, 10)
-    prev2   = prices[:-2]
-    ma5_t2  = calc_ma(prev2, 5)
-    ma10_t2 = calc_ma(prev2, 10)
+    close = prices[-1]
+    prev  = prices[:-1]
 
-    if not all([ma5_t0, ma10_t0, ma5_t1, ma10_t1, ma5_t2, ma10_t2]):
+    # 利用可能なMA期間を決定（データ量に応じて）
+    all_periods = [5, 10, 20, 50, 100, 200]
+    avail = [p for p in all_periods if len(prices) >= p + 2]
+
+    mas, mas_p, slopes = {}, {}, {}
+    for p in avail:
+        mas[p]   = calc_ma(prices, p)
+        mas_p[p] = calc_ma(prev, p)
+        slopes[p] = round(mas[p] - mas_p[p], 1) if mas[p] and mas_p[p] else 0
+
+    if 5 not in mas or 10 not in mas:
         return None
 
-    diff_t0 = ma5_t0 - ma10_t0
-    diff_t1 = ma5_t1 - ma10_t1
-    diff_t2 = ma5_t2 - ma10_t2
-    diff_pct = diff_t0 / ma10_t0 * 100
+    # ゴールデンクロス（MA5 が MA10 を上抜け）
+    gc_today  = (mas_p.get(5, 0) <= mas_p.get(10, 1e9)) and (mas[5] > mas[10])
+    ma5_above = mas[5] > mas[10]
 
-    gc_today   = diff_t1 <= 0 and diff_t0 > 0
-    ma5_above  = diff_t0 > 0
-    conv_speed = diff_t0 - diff_t1
-    conv_speed2= diff_t1 - diff_t2
-    is_conv    = conv_speed < 0
-    is_accel   = conv_speed < conv_speed2
-    ma5_slope  = ma5_t0 - ma5_t1
-    ma10_slope = ma10_t0 - ma10_t1
-    ma5_rising = ma5_slope > 0
-    ma5_faster = ma5_slope > ma10_slope
+    # パーフェクトオーダー確認（MA5>MA10>MA20>MA50>MA100>MA200）
+    order_pairs = [(a, b) for a, b in [(5,10),(10,20),(20,50),(50,100),(100,200)]
+                   if a in avail and b in avail]
+    order_flags  = [mas[a] > mas[b] for a, b in order_pairs]
+    aligned_count = sum(order_flags)
+    perfect_order = bool(order_flags) and all(order_flags)
+    max_pairs     = len(order_pairs)
 
-    # クロスまで推定日数
-    est_days = None
-    if is_conv and conv_speed != 0 and diff_t0 != 0:
-        n = -diff_t0 / conv_speed
-        if 0 < n <= 30:
-            est_days = int(n) + 1
+    # 全MA上昇確認
+    rising_flags = [slopes[p] > 0 for p in avail]
+    rising_count = sum(rising_flags)
 
-    # 出来高確認（直近20日平均の1.5倍以上 → 買いエネルギー大）
+    # 株価 vs 主要MA
+    above_ma200 = (close > mas[200]) if 200 in avail else None
+    above_ma50  = (close > mas[50])  if 50  in avail else None
+
+    # 押し目検知（株価がMAの ±2% 以内）
+    pullback_ma = None
+    for p in [5, 10, 20, 50]:
+        if p in avail:
+            mv = mas[p]
+            if mv * 0.98 <= close <= mv * 1.02:
+                pullback_ma = f"MA{p}"
+                break
+
+    # diff_pct（MA5 vs MA10 乖離率）
+    diff_pct = (mas[5] - mas[10]) / mas[10] * 100
+
+    # 出来高確認（直近20日平均の1.5倍以上）
     vol_ratio = None
     vol_confirmed = False
     if volumes and len(volumes) >= 21:
         vol_avg20 = sum(volumes[-21:-1]) / 20
         if vol_avg20 > 0:
-            vol_ratio = round(volumes[-1] / vol_avg20, 2)
+            vol_ratio     = round(volumes[-1] / vol_avg20, 2)
             vol_confirmed = vol_ratio >= 1.5
 
-    # 予見スコア
+    # スコアリング（向川式 MA配列ベース）
     score = 0
-    abs_pct = abs(diff_pct)
-    if   abs_pct <= 0.3: score += 40
-    elif abs_pct <= 0.7: score += 32
-    elif abs_pct <= 1.5: score += 22
-    elif abs_pct <= 3.0: score += 12
-    elif abs_pct <= 5.0: score += 5
-    if is_conv:       score += 15
-    if is_accel:      score += 15
-    if ma5_rising:    score += 15
-    if ma5_faster:    score += 15
-    if ma10_slope > 0: score += 10  # MA10も上昇中
-    if vol_confirmed and not gc_today: score += 15  # 出来高急増ボーナス
-    if gc_today:      score = 0
+    score += aligned_count * 10           # MA整列ボーナス（最大50点）
+    score += rising_count  * 3            # MA上昇ボーナス（最大18点）
+    if above_ma200:                score += 10   # MA200より上（長期強気）
+    if above_ma50:                 score += 5    # MA50より上
+    if pullback_ma and aligned_count >= 3: score += 15  # 押し目チャンス
+    if gc_today and aligned_count >= 2:   score += 10  # GC（配列前提）
+    if vol_confirmed:              score += 10   # 出来高急増
 
-    rank = "GC" if gc_today else "S" if score >= 75 else "A" if score >= 50 else "B" if score >= 30 else "C"
+    # ランキング（向川式）
+    # GC は「整列が整った状態でのクロス」のみ本物と判定
+    if gc_today and aligned_count >= 3:
+        rank = "GC"
+    elif score >= 80:
+        rank = "S"
+    elif score >= 60:
+        rank = "A"
+    elif score >= 40:
+        rank = "B"
+    else:
+        rank = "C"
 
     return {
-        "close":         round(prices[-1], 1),
-        "ma5":           round(ma5_t0, 1),
-        "ma10":          round(ma10_t0, 1),
-        "diff_pct":      round(diff_pct, 2),
-        "gc_today":      gc_today,
-        "ma5_above":     ma5_above,
-        "is_conv":       is_conv,
-        "is_accel":      is_accel,
-        "ma5_rising":    ma5_rising,
-        "ma5_faster":    ma5_faster,
-        "est_days":      est_days,
-        "score":         score,
-        "rank":          rank,
-        "ma5_slope":     round(ma5_slope, 1),
-        "ma10_slope":    round(ma10_slope, 1),
-        "vol_ratio":     vol_ratio,
-        "vol_confirmed": vol_confirmed,
+        "close":          round(close, 1),
+        "ma5":            round(mas[5], 1),
+        "ma10":           round(mas[10], 1),
+        "ma20":           round(mas.get(20, 0), 1),
+        "ma50":           round(mas.get(50, 0), 1),
+        "ma100":          round(mas.get(100, 0), 1),
+        "ma200":          round(mas.get(200, 0), 1),
+        "diff_pct":       round(diff_pct, 2),
+        "gc_today":       gc_today,
+        "ma5_above":      ma5_above,
+        "perfect_order":  perfect_order,
+        "aligned_count":  aligned_count,
+        "max_pairs":      max_pairs,
+        "rising_count":   rising_count,
+        "above_ma200":    above_ma200,
+        "above_ma50":     above_ma50,
+        "pullback_ma":    pullback_ma,
+        "score":          score,
+        "rank":           rank,
+        "ma5_slope":      slopes.get(5, 0),
+        "ma10_slope":     slopes.get(10, 0),
+        "ma20_slope":     slopes.get(20, 0),
+        "ma50_slope":     slopes.get(50, 0),
+        "vol_ratio":      vol_ratio,
+        "vol_confirmed":  vol_confirmed,
     }
 
 def fetch_closes(ticker, period, interval):
@@ -293,9 +323,9 @@ def check_market_regime(index_code="^N225"):
 def scan_all(timeframe, weekly_lookup: dict | None = None, market_regime: dict | None = None):
     """全銘柄をスキャンして結果リストを返す"""
     cfg = {
-        "1d":  {"period": "3mo",  "interval": "1d"},
-        "1wk": {"period": "2y",   "interval": "1wk"},
-        "1mo": {"period": "5y",   "interval": "1mo"},
+        "1d":  {"period": "1y",   "interval": "1d"},   # MA200に必要な約252日
+        "1wk": {"period": "5y",   "interval": "1wk"},  # MA200週足に必要な約260週
+        "1mo": {"period": "10y",  "interval": "1mo"},  # MA100月足まで対応
     }[timeframe]
 
     results = []
@@ -373,7 +403,8 @@ def main():
     print(f"JPX400 週足スキャン開始 ({now_str})")
     print(f"{'='*50}")
     wk_results = scan_all("1wk")
-    weekly_lookup = {r["code"]: r.get("ma5_above", False) for r in wk_results}
+    # 週足でも2ペア以上整列（MA5>MA10>MA20）していれば週足整合と判定
+    weekly_lookup = {r["code"]: r.get("aligned_count", 0) >= 2 for r in wk_results}
     output["timeframes"]["1wk"] = wk_results
 
     for tf in ["1d", "1mo"]:

@@ -116,10 +116,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 
   <!-- STATS -->
   <div class="stats" id="stats">
-    <div class="stat"><div class="stat-n" id="stGC" style="color:var(--green)">—</div><div class="stat-l">GC 本日</div></div>
-    <div class="stat"><div class="stat-n" id="stS"  style="color:var(--gold)">—</div><div class="stat-l">RANK S</div></div>
-    <div class="stat"><div class="stat-n" id="stA"  style="color:#f5c842">—</div><div class="stat-l">RANK A</div></div>
-    <div class="stat"><div class="stat-n" id="stHold" style="color:var(--accent)">—</div><div class="stat-l">MA5上</div></div>
+    <div class="stat"><div class="stat-n" id="stGC"   style="color:var(--green)">—</div><div class="stat-l">GC 本日</div></div>
+    <div class="stat"><div class="stat-n" id="stS"    style="color:var(--gold)">—</div><div class="stat-l">RANK S</div></div>
+    <div class="stat"><div class="stat-n" id="stPerf" style="color:var(--accent)">—</div><div class="stat-l">整列5/5</div></div>
+    <div class="stat"><div class="stat-n" id="stHold" style="color:var(--text2)">—</div><div class="stat-l">MA5上</div></div>
   </div>
 
   <!-- TABS -->
@@ -208,13 +208,13 @@ function render() {
   const results = allData[currentTF] || [];
 
   // stats
-  const gc   = results.filter(r => r.gc_today).length;
+  const gc   = results.filter(r => r.gc_today && r.aligned_count >= 3).length;
   const s    = results.filter(r => r.rank === 'S').length;
-  const a    = results.filter(r => r.rank === 'A').length;
-  const hold = results.filter(r => r.ma5_above && !r.gc_today).length;
+  const perf = results.filter(r => r.perfect_order).length;
+  const hold = results.filter(r => r.ma5_above).length;
   document.getElementById('stGC').textContent   = gc;
   document.getElementById('stS').textContent    = s;
-  document.getElementById('stA').textContent    = a;
+  document.getElementById('stPerf').textContent = perf;
   document.getElementById('stHold').textContent = hold;
 
   // filter
@@ -256,9 +256,17 @@ function render() {
     const rowCls   = isGC ? 'gc' : isS ? 'rank-s' : isA ? 'rank-a' : isB ? 'rank-b' : isHold ? 'hold' : '';
     const barCol   = isGC ? 'var(--green)' : isS ? 'var(--gold)' : isA ? '#d4820a' : isB ? 'var(--blue)' : 'var(--text3)';
     const diffSign = (r.diff_pct || 0) >= 0 ? '+' : '';
-    const subText  = isGC ? '●' : r.est_days ? `→${r.est_days}日` : r.is_conv ? '収束' : r.is_accel ? '加速' : '';
     const arrow    = v => v > 0 ? '↑' : v < 0 ? '↓' : '→';
     const sc       = v => v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--text3)';
+
+    // 配列インジケーター（●=整列 ○=未整列）
+    const maxP = r.max_pairs || 5;
+    const ac   = r.aligned_count || 0;
+    const alignDots = '●'.repeat(ac) + '○'.repeat(maxP - ac);
+    const alignCol  = ac >= 5 ? 'var(--green)' : ac >= 3 ? 'var(--gold)' : 'var(--text3)';
+
+    // サブテキスト（押し目 > 完全整列 > GC）
+    const subText = isGC ? '●' : r.pullback_ma ? r.pullback_ma.replace('MA','押') : r.perfect_order ? '完全' : '';
 
     return `<div class="srow ${rowCls}">
       <div class="sr-main">
@@ -269,8 +277,8 @@ function render() {
         <div class="sr-sub">${subText}</div>
       </div>
       <div class="sr-meta">
-        <div class="sr-mi">MA5 <b style="color:${sc(r.ma5_slope)}">${arrow(r.ma5_slope)}${Math.abs(r.ma5_slope||0).toFixed(0)}円</b></div>
-        <div class="sr-mi">MA10 <b style="color:${sc(r.ma10_slope)}">${arrow(r.ma10_slope)}${Math.abs(r.ma10_slope||0).toFixed(0)}円</b></div>
+        <div class="sr-mi"><b style="color:${alignCol};letter-spacing:-1px">${alignDots}</b></div>
+        <div class="sr-mi">MA5 <b style="color:${sc(r.ma5_slope)}">${arrow(r.ma5_slope)}${Math.abs(r.ma5_slope||0).toFixed(0)}</b></div>
         <div class="sr-mi">乖離 <b style="color:${barCol}">${diffSign}${(r.diff_pct||0).toFixed(2)}%</b></div>
         ${r.vol_ratio != null ? `<div class="sr-mi">出来高 <b style="color:${r.vol_confirmed ? 'var(--green)' : 'var(--text3)'}">×${r.vol_ratio.toFixed(1)}</b></div>` : ''}
         ${r.weekly_aligned ? '<div class="sr-mi"><b style="color:var(--green)">週足↑</b></div>' : ''}
