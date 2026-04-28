@@ -18,7 +18,7 @@ jobs:
           python-version: '3.12'
 
       - name: ライブラリ インストール
-        run: pip install yfinance pandas pyarrow
+        run: pip install yfinance pandas pyarrow requests
 
       - name: JPX400 スキャン実行
         run: python scan_jpx400.py
