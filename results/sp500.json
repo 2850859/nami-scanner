@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-28 13:04 JST",
+  "generated_at": "2026-04-28 18:43 JST",
   "market": "S&P500",
   "timeframes": {
     "1d": [
@@ -2572,9 +2572,9 @@
         "code": "BK",
         "name": "Bank of New York Mellon",
         "close": 134.47,
-        "ma5": 135.55,
-        "ma10": 134.55,
-        "diff_pct": 0.74,
+        "ma5": 135.12,
+        "ma10": 134.07,
+        "diff_pct": 0.78,
         "gc_today": false,
         "ma5_above": true,
         "is_conv": true,
@@ -2584,8 +2584,8 @@
         "est_days": 2,
         "score": 37,
         "rank": "B",
-        "ma5_slope": -0.18,
-        "ma10_slope": 0.53
+        "ma5_slope": -0.07,
+        "ma10_slope": 0.58
       },
       {
         "code": "FCX",
@@ -7930,9 +7930,9 @@
         "code": "CE",
         "name": "Celanese",
         "close": 65.09,
-        "ma5": 65.31,
-        "ma10": 65.03,
-        "diff_pct": 0.43,
+        "ma5": 65.29,
+        "ma10": 65.01,
+        "diff_pct": 0.44,
         "gc_today": true,
         "ma5_above": true,
         "is_conv": false,
@@ -7942,7 +7942,7 @@
         "est_days": null,
         "score": 0,
         "rank": "GC",
-        "ma5_slope": 0.3,
+        "ma5_slope": 0.31,
         "ma10_slope": -0.31
       },
       {
@@ -16063,9 +16063,9 @@
       {
         "code": "CE",
         "name": "Celanese",
-        "close": 65.09,
-        "ma5": 63.86,
-        "ma10": 59.66,
+        "close": 65.06,
+        "ma5": 63.83,
+        "ma10": 59.64,
         "diff_pct": 7.04,
         "gc_today": false,
         "ma5_above": true,
@@ -24198,9 +24198,9 @@
         "code": "CE",
         "name": "Celanese",
         "close": 65.09,
-        "ma5": 53.49,
-        "ma10": 48.92,
-        "diff_pct": 9.34,
+        "ma5": 53.47,
+        "ma10": 48.9,
+        "diff_pct": 9.35,
         "gc_today": false,
         "ma5_above": true,
         "is_conv": false,
@@ -24210,7 +24210,7 @@
         "est_days": null,
         "score": 45,
         "rank": "B",
-        "ma5_slope": 4.69,
+        "ma5_slope": 4.7,
         "ma10_slope": 0.99
       },
       {
