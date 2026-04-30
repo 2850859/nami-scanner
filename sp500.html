@@ -44,6 +44,19 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .stat:last-child{border-right:none}
 .stat-n{font-family:var(--mono);font-size:16px;font-weight:700;line-height:1;margin-bottom:2px}
 .stat-l{font-size:8px;color:var(--text3);letter-spacing:.06em;font-family:var(--mono)}
+/* 比較サマリー（波乗り vs Finviz） */
+.stats-cmp{display:grid;grid-template-columns:repeat(3,1fr);background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0}
+.stcmp{padding:6px 8px;text-align:center;border-right:1px solid var(--border)}
+.stcmp:last-child{border-right:none}
+.stcmp-n{font-family:var(--mono);font-size:14px;font-weight:700;line-height:1;margin-bottom:3px}
+.stcmp-l{font-size:8px;color:var(--text3);letter-spacing:.04em;line-height:1.35}
+.cmp-note{font-size:9px;color:var(--text3);padding:6px 16px 8px;background:var(--bg2);border-bottom:1px solid var(--border);line-height:1.45}
+.sr-cmp{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:3px;padding-left:26px;padding-bottom:1px;font-family:var(--mono);font-size:9px;line-height:1.35}
+.sr-cmp-row{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
+.cmp-k{color:var(--text3);font-weight:700;font-size:8px;letter-spacing:.06em}
+.fv-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:2px;vertical-align:middle}
+.fv-on{background:var(--green)}
+.fv-off{background:var(--surface2);border:1px solid var(--border2)}
 
 /* TABS */
 .tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;padding:0 12px;overflow-x:auto}
@@ -101,6 +114,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
       <button class="hdr-reload" onclick="loadData()" title="データを再読み込み">↻</button>
     </div>
     <div class="updated" id="updatedAt">データ読み込み中...</div>
+    <div class="cmp-note" id="cmpNote" style="display:none"></div>
   </div>
 
   <!-- 足種 -->
@@ -122,6 +136,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
     <div class="stat"><div class="stat-n" id="stHold" style="color:var(--text2)">—</div><div class="stat-l">MA5上</div></div>
   </div>
 
+  <div class="stats-cmp" id="statsCmp">
+    <div class="stcmp"><div class="stcmp-n" id="stFv5" style="color:var(--green)">—</div><div class="stcmp-l">Finviz 5条件<br>すべて一致</div></div>
+    <div class="stcmp"><div class="stcmp-n" id="stBoth" style="color:var(--accent)">—</div><div class="stcmp-l">波乗り GC<br>かつ Finviz5</div></div>
+    <div class="stcmp"><div class="stcmp-n" id="stFvNote" style="font-size:10px;color:var(--text3);padding-top:4px">日足のみ</div><div class="stcmp-l">週足・月足は<br>Finviz列なし</div></div>
+  </div>
+
   <!-- TABS -->
   <div class="tabs">
     <button class="tab on" onclick="setFilter('all',this)">ALL</button>
@@ -130,6 +150,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
     <button class="tab"    onclick="setFilter('a',this)">A ランク</button>
     <button class="tab"    onclick="setFilter('b',this)">B ランク</button>
     <button class="tab"    onclick="setFilter('hold',this)">MA5上</button>
+    <button class="tab"    onclick="setFilter('fv5',this)">FV5</button>
+    <button class="tab"    onclick="setFilter('both',this)">GC×FV</button>
   </div>
 
   <!-- LIST -->
@@ -162,6 +184,13 @@ async function loadData() {
     const json = await res.json();
     allData = json.timeframes || {};
     document.getElementById('updatedAt').textContent = `最終スキャン: ${json.generated_at || '不明'}`;
+    const cn = document.getElementById('cmpNote');
+    if (json.comparison_note) {
+      cn.style.display = 'block';
+      cn.textContent = json.comparison_note;
+    } else {
+      cn.style.display = 'none';
+    }
     // 相場レジーム表示
     const regime = json.market_regime;
     if (regime) {
@@ -217,6 +246,11 @@ function render() {
   document.getElementById('stPerf').textContent = perf;
   document.getElementById('stHold').textContent = hold;
 
+  const fv5cnt = results.filter(r => r.finviz && r.finviz.all_match).length;
+  const bothCnt = results.filter(r => r.wave_finviz_both).length;
+  document.getElementById('stFv5').textContent = currentTF === '1d' ? fv5cnt : '—';
+  document.getElementById('stBoth').textContent = currentTF === '1d' ? bothCnt : '—';
+
   // filter
   let data = [...results];
   if (currentFilter === 'gc')   data = data.filter(r => r.gc_today);
@@ -224,6 +258,8 @@ function render() {
   if (currentFilter === 'a')    data = data.filter(r => r.rank === 'A');
   if (currentFilter === 'b')    data = data.filter(r => r.rank === 'B');
   if (currentFilter === 'hold') data = data.filter(r => r.ma5_above && !r.gc_today);
+  if (currentFilter === 'fv5')   data = data.filter(r => r.finviz && r.finviz.all_match);
+  if (currentFilter === 'both') data = data.filter(r => r.wave_finviz_both);
 
   if (data.length === 0) {
     document.getElementById('list').innerHTML = `
@@ -265,6 +301,27 @@ function render() {
     const alignCol  = ac >= 5 ? 'var(--green)' : ac >= 3 ? 'var(--gold)' : 'var(--text3)';
     const subText = isGC ? '●' : r.pullback_ma ? r.pullback_ma.replace('MA','押') : r.perfect_order ? '完全' : '';
 
+    const fv = r.finviz;
+    let cmpBlock = '';
+    if (currentTF === '1d' && !fv) {
+      cmpBlock = `<div class="sr-cmp"><span style="color:var(--text3)">Finviz 比較は次回の scan_sp500 実行後に表示されます</span></div>`;
+    } else if (currentTF === '1d' && fv) {
+      const fdot = (ok) => `<span class="fv-dot ${ok ? 'fv-on' : 'fv-off'}" title=""></span>`;
+      const fvLabels = ['Vol2M','>SMA20','>SMA50','>SMA200','高値±10%'];
+      const fvKeys = ['avg_vol_2m','above_sma20','above_sma50','above_sma200','near_50d_high'];
+      const dots = fvKeys.map((k,i) => {
+        const ok = fv[k];
+        return `<span title="${fvLabels[i]}:${ok?'OK':'×'}">${fdot(ok)}</span>`;
+      }).join('');
+      const pct = fv.pct_below_50d_high != null ? `高値乖離 ${fv.pct_below_50d_high}%` : '';
+      cmpBlock = `<div class="sr-cmp">
+        <div class="sr-cmp-row"><span class="cmp-k">波乗り</span> <span>ランク <b style="color:${barCol}">${isGC ? 'GC' : (r.rank||'C')}</b></span> <span>整列 <b>${ac}/${maxP}</b></span> <span>スコア <b>${r.score}</b></span>${r.vol_confirmed ? ' <span style="color:var(--green)">出来高急増</span>' : ''}</div>
+        <div class="sr-cmp-row"><span class="cmp-k">Finviz</span> ${dots} <b>${fv.match_count}/5</b>${fv.all_match ? ' <span style="color:var(--green)">ALL</span>' : ''} <span style="color:var(--text3)">${pct}</span></div>
+      </div>`;
+    } else if (currentTF !== '1d') {
+      cmpBlock = `<div class="sr-cmp"><span class="cmp-k">波乗り</span> <span>ランク <b style="color:${barCol}">${isGC ? 'GC' : (r.rank||'C')}</b></span> <span>整列 <b>${ac}/${maxP}</b></span> <span style="color:var(--text3)">（Finvizは日足スキャンのみ）</span></div>`;
+    }
+
     return `<div class="srow ${rowCls}">
       <div class="sr-main">
         <div class="sr-rank" style="color:${barCol}">${isGC ? 'GC' : (r.rank||'C')}</div>
@@ -280,6 +337,7 @@ function render() {
         ${r.vol_ratio != null ? `<div class="sr-mi">出来高 <b style="color:${r.vol_confirmed ? 'var(--green)' : 'var(--text3)'}">×${r.vol_ratio.toFixed(1)}</b></div>` : ''}
         ${r.weekly_aligned ? '<div class="sr-mi"><b style="color:var(--green)">週足↑</b></div>' : ''}
       </div>
+      ${cmpBlock}
     </div>`;
   }).join('');
 }

@@ -154,7 +154,48 @@ def calc_ma(prices, n):
         return None
     return sum(prices[-n:]) / n
 
-def analyze(prices, volumes=None):
+def finviz_screen(closes, volumes, highs, mas, close):
+    """
+    PDF「波乗り米国株」(Finviz スクリーナー) に相当する 5 条件。
+    - 20 日平均出来高 ≥ 200 万株（Finviz の Over 2M に相当）
+    - 終値 > SMA20 / SMA50 / SMA200
+    - 50 日高値からの乖離 0〜10%（高値圏）
+    yfinance の日足ベース。Finviz 公式画面の数値とは一致しない場合あり。
+    """
+    if not volumes or not highs:
+        return None
+    if len(volumes) != len(closes) or len(highs) != len(closes):
+        return None
+    if 200 not in mas or len(highs) < 50 or len(volumes) < 21:
+        return None
+
+    vol_avg20 = sum(volumes[-21:-1]) / 20
+    avg_vol_2m = vol_avg20 >= 2_000_000
+
+    h50 = max(highs[-50:])
+    pct_below = round((h50 - close) / h50 * 100, 2) if h50 > 0 else None
+    near_50d_high = pct_below is not None and 0 <= pct_below <= 10
+
+    above_sma20 = close > mas[20] if 20 in mas else False
+    above_sma50 = close > mas[50] if 50 in mas else False
+    above_sma200 = close > mas[200] if 200 in mas else False
+
+    flags = [avg_vol_2m, above_sma20, above_sma50, above_sma200, near_50d_high]
+    all_match = all(flags)
+
+    return {
+        "avg_vol_2m": avg_vol_2m,
+        "above_sma20": above_sma20,
+        "above_sma50": above_sma50,
+        "above_sma200": above_sma200,
+        "near_50d_high": near_50d_high,
+        "pct_below_50d_high": pct_below,
+        "avg_vol_20d": round(vol_avg20, 0),
+        "all_match": all_match,
+        "match_count": sum(flags),
+    }
+
+def analyze(prices, volumes=None, highs=None):
     """
     向川式 波乗りトレード ロジック
     MA5/10/20/50/100/200 の上昇パーフェクトオーダーと押し目で判断
@@ -231,7 +272,7 @@ def analyze(prices, volumes=None):
     else:
         rank = "C"
 
-    return {
+    out = {
         "close":          round(close, 2),
         "ma5":            round(mas[5], 2),
         "ma10":           round(mas[10], 2),
@@ -259,6 +300,17 @@ def analyze(prices, volumes=None):
         "vol_confirmed":  vol_confirmed,
     }
 
+    fv = finviz_screen(prices, volumes, highs, mas, close)
+    if fv is not None:
+        out["finviz"] = fv
+        out["wave_finviz_both"] = bool(
+            fv["all_match"]
+            and gc_today
+            and aligned_count >= 3
+        )
+
+    return out
+
 def fetch_closes(ticker, period, interval):
     try:
         t = yf.Ticker(ticker)
@@ -271,18 +323,20 @@ def fetch_closes(ticker, period, interval):
         return None
 
 def fetch_ohlcv(ticker, period, interval):
-    """終値と出来高を1回のAPIコールで取得"""
+    """終値・出来高・高値を1回のAPIコールで取得（終値行に揃える）"""
     try:
         t = yf.Ticker(ticker)
         df = t.history(period=period, interval=interval)
+        df = df.dropna(subset=["Close"])
         if df.empty or len(df) < 12:
-            return None, None
-        closes = df["Close"].dropna().tolist()
-        volumes = df["Volume"].tolist()
-        return closes, volumes
+            return None
+        closes = df["Close"].tolist()
+        volumes = df["Volume"].fillna(0).tolist()
+        highs = df["High"].tolist()
+        return closes, volumes, highs
     except Exception as e:
         print(f"  ⚠ {ticker}: {e}")
-        return None, None
+        return None
 
 def check_market_regime(index_code="^GSPC"):
     """市場全体のトレンドを確認（MA20 vs MA50）"""
@@ -318,17 +372,21 @@ def scan_all(timeframe, weekly_lookup: dict | None = None, market_regime: dict |
         print(f"  [{i+1:3}/{total}] {code} {name}", end=" ")
 
         if timeframe == "1d":
-            closes, volumes = fetch_ohlcv(code, cfg["period"], cfg["interval"])
+            ohlcv = fetch_ohlcv(code, cfg["period"], cfg["interval"])
+            if ohlcv is None:
+                closes, volumes, highs = None, None, None
+            else:
+                closes, volumes, highs = ohlcv
         else:
             closes = fetch_closes(code, cfg["period"], cfg["interval"])
-            volumes = None
+            volumes, highs = None, None
 
         if closes is None:
             print("SKIP")
             time.sleep(0.3)
             continue
 
-        sig = analyze(closes, volumes)
+        sig = analyze(closes, volumes, highs)
         if sig:
             # 週足整合フィルター：週足でも MA5 > MA10 なら +15点
             weekly_aligned = weekly_lookup.get(code, False) if weekly_lookup else None
@@ -355,8 +413,10 @@ def scan_all(timeframe, weekly_lookup: dict | None = None, market_regime: dict |
             sig["market_caution"] = market_caution
 
             results.append({"code": code, "name": name, **sig})
+            fv = sig.get("finviz") or {}
             flags = ("W✓" if weekly_aligned else "") + (" V✓" if sig.get("vol_confirmed") else "") + (" ⚠市場" if market_caution else "")
-            print(f"rank={sig['rank']} gc={sig['gc_today']} score={sig['score']}{flags}")
+            fv_tag = " FV✓" if fv.get("all_match") else ""
+            print(f"rank={sig['rank']} gc={sig['gc_today']} score={sig['score']}{flags}{fv_tag}")
         else:
             print("no data")
         time.sleep(0.3)
@@ -370,7 +430,11 @@ def main():
     output = {
         "generated_at": now_str,
         "market": "S&P500",
-        "timeframes": {}
+        "comparison_note": (
+            "日足のみ: finviz = PDF の Finviz スクリーナー相当（20日平均出来高≥200万株、終値>SMA20/50/200、"
+            "50日高値から0〜10%以内）。yfinance ベースで Finviz 公式値と一致しない場合があります。"
+        ),
+        "timeframes": {},
     }
 
     # 相場全体トレンド確認（S&P500 MA20 vs MA50）
@@ -403,7 +467,14 @@ def main():
         rank_s = [r for r in results if r["rank"] == "S"]
         wa     = [r for r in results if r.get("weekly_aligned")]
         vol    = [r for r in results if r.get("vol_confirmed")]
-        print(f"\n  GC本日: {len(gc)}件  Sランク: {len(rank_s)}件  週足整合: {len(wa)}件  出来高急増: {len(vol)}件  合計: {len(results)}件")
+        fv5    = [r for r in results if (r.get("finviz") or {}).get("all_match")]
+        both   = [r for r in results if r.get("wave_finviz_both")]
+        line = (
+            f"\n  GC本日: {len(gc)}件  Sランク: {len(rank_s)}件  週足整合: {len(wa)}件  出来高急増: {len(vol)}件  合計: {len(results)}件"
+        )
+        if tf == "1d":
+            line += f"\n  Finviz5全一致: {len(fv5)}件  波乗りGC×Finviz5: {len(both)}件"
+        print(line)
 
     with open("results/sp500.json", "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)

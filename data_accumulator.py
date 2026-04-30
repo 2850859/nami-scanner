@@ -27,30 +27,36 @@ def append_history(market: str, timeframe: str, results: list, scan_date: str):
     os.makedirs("data", exist_ok=True)
     path = Path(f"data/{market}_history_{timeframe}.parquet")
 
+    def _to_bool(v, default=False):
+        if v is None:
+            return default
+        return bool(v)
+
     # 当日分のDataFrameを作成
     rows = []
     for r in results:
+        # スキーマ差分に強くする（scan_* 側の項目追加/削除で落ちない）
         rows.append({
             "date":        scan_date,
             "market":      market,
             "timeframe":   timeframe,
             "code":        r["code"],
             "name":        r["name"],
-            "close":       float(r["close"]),
-            "ma5":         float(r["ma5"]),
-            "ma10":        float(r["ma10"]),
-            "diff_pct":    float(r["diff_pct"]),
-            "gc_today":    bool(r["gc_today"]),
-            "ma5_above":   bool(r["ma5_above"]),
-            "is_conv":     bool(r["is_conv"]),
-            "is_accel":    bool(r["is_accel"]),
-            "ma5_rising":  bool(r["ma5_rising"]),
-            "ma5_faster":  bool(r["ma5_faster"]),
-            "est_days":    int(r["est_days"]) if r["est_days"] else None,
-            "score":       int(r["score"]),
-            "rank":        r["rank"],
-            "ma5_slope":   float(r["ma5_slope"]),
-            "ma10_slope":  float(r["ma10_slope"]),
+            "close":       float(r.get("close", 0)),
+            "ma5":         float(r.get("ma5", 0)),
+            "ma10":        float(r.get("ma10", 0)),
+            "diff_pct":    float(r.get("diff_pct", 0)),
+            "gc_today":    _to_bool(r.get("gc_today"), False),
+            "ma5_above":   _to_bool(r.get("ma5_above"), False),
+            "is_conv":     _to_bool(r.get("is_conv"), False),
+            "is_accel":    _to_bool(r.get("is_accel"), False),
+            "ma5_rising":  _to_bool(r.get("ma5_rising"), False),
+            "ma5_faster":  _to_bool(r.get("ma5_faster"), False),
+            "est_days":    int(r["est_days"]) if r.get("est_days") not in (None, "") else None,
+            "score":       int(r.get("score", 0)),
+            "rank":        r.get("rank", "C"),
+            "ma5_slope":   float(r.get("ma5_slope", 0)),
+            "ma10_slope":  float(r.get("ma10_slope", 0)),
         })
     df_new = pd.DataFrame(rows)
 
@@ -90,7 +96,7 @@ def append_signals(market: str, results: list, scan_date: str):
     with open(path, "a", encoding="utf-8") as f:
         for r in results:
             # シグナル候補のみ記録
-            if not (r["gc_today"] or r["rank"] in ("S", "A")):
+            if not (bool(r.get("gc_today")) or r.get("rank") in ("S", "A")):
                 continue
 
             event = {
@@ -98,14 +104,14 @@ def append_signals(market: str, results: list, scan_date: str):
                 "market":    market,
                 "code":      r["code"],
                 "name":      r["name"],
-                "event":     "GC" if r["gc_today"] else f"PRE_{r['rank']}",
-                "close":     float(r["close"]),
-                "ma5":       float(r["ma5"]),
-                "ma10":      float(r["ma10"]),
-                "diff_pct":  float(r["diff_pct"]),
-                "score":     int(r["score"]),
-                "rank":      r["rank"],
-                "est_days":  int(r["est_days"]) if r["est_days"] else None,
+                "event":     "GC" if bool(r.get("gc_today")) else f"PRE_{r.get('rank', 'C')}",
+                "close":     float(r.get("close", 0)),
+                "ma5":       float(r.get("ma5", 0)),
+                "ma10":      float(r.get("ma10", 0)),
+                "diff_pct":  float(r.get("diff_pct", 0)),
+                "score":     int(r.get("score", 0)),
+                "rank":      r.get("rank", "C"),
+                "est_days":  int(r["est_days"]) if r.get("est_days") not in (None, "") else None,
             }
             f.write(json.dumps(event, ensure_ascii=False) + "\n")
             new_count += 1
