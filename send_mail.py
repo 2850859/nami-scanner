@@ -199,6 +199,37 @@ def main():
             print(f"  スクリーンショット添付: {attach_name}")
 
     # ========================================
+    # GC追跡 勝率テーブル（f-string 内で複雑な join を書かない）
+    # ========================================
+    if gc_stats:
+        _gc_rows = []
+        for _p, _s in gc_stats.items():
+            _wr_c = "#00955a" if _s["win_rate"] >= 50 else "#d93025"
+            _pct_c = "#00955a" if _s["avg_pct"] >= 0 else "#d93025"
+            _sign = "+" if _s["avg_pct"] >= 0 else ""
+            _gc_rows.append(
+                f'<tr><td style="padding:8px;border:1px solid #e0e6ed;">{_p}日後</td>'
+                f'<td style="padding:8px;border:1px solid #e0e6ed;text-align:center;font-weight:bold;color:{_wr_c}">{_s["win_rate"]}%</td>'
+                f'<td style="padding:8px;border:1px solid #e0e6ed;text-align:center;">{_s["wins"]}/{_s["total"]}件</td>'
+                f'<td style="padding:8px;border:1px solid #e0e6ed;text-align:center;color:{_pct_c};font-weight:bold;">{_sign}{_s["avg_pct"]}%</td></tr>'
+            )
+        gc_stats_html = (
+            '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;">'
+            '<thead><tr style="background:#f5f7fa;">'
+            '<th style="padding:8px;border:1px solid #e0e6ed;text-align:left;">期間</th>'
+            '<th style="padding:8px;border:1px solid #e0e6ed;text-align:center;">勝率</th>'
+            '<th style="padding:8px;border:1px solid #e0e6ed;text-align:center;">件数</th>'
+            '<th style="padding:8px;border:1px solid #e0e6ed;text-align:center;">平均騰落率</th>'
+            '</tr></thead><tbody>'
+            + "".join(_gc_rows)
+            + "</tbody></table>"
+        )
+    else:
+        gc_stats_html = (
+            '<p style="color:#999;font-size:13px;">データ蓄積中...（GCシグナルが累積されると勝率が表示されます）</p>'
+        )
+
+    # ========================================
     # メール本文（HTML）作成
     # ========================================
     subject = f"[波乗りスキャナー] {today_label} シグナル {total_signals}件 (GC:{jpx_gc + sp_gc} / S:{jpx_s + sp_s} / A:{jpx_a + sp_a})"
@@ -248,7 +279,7 @@ def main():
   {'<p style="color: #666; font-size: 13px; margin-top: 8px;">各市場のスキャン結果画面のスクリーンショットも添付しています。</p>' if has_screenshot else ''}
 
   <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">GC追跡 勝率実績（累計 {gc_total}件）</h2>
-  {'<table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px;"><thead><tr style="background:#f5f7fa;"><th style="padding:8px;border:1px solid #e0e6ed;text-align:left;">期間</th><th style="padding:8px;border:1px solid #e0e6ed;text-align:center;">勝率</th><th style="padding:8px;border:1px solid #e0e6ed;text-align:center;">件数</th><th style="padding:8px;border:1px solid #e0e6ed;text-align:center;">平均騰落率</th></tr></thead><tbody>' + "".join(f\'<tr><td style="padding:8px;border:1px solid #e0e6ed;">{p}日後</td><td style="padding:8px;border:1px solid #e0e6ed;text-align:center;font-weight:bold;color:{("#00955a" if s["win_rate"]>=50 else "#d93025")}">{s["win_rate"]}%</td><td style="padding:8px;border:1px solid #e0e6ed;text-align:center;">{s["wins"]}/{s["total"]}件</td><td style="padding:8px;border:1px solid #e0e6ed;text-align:center;color:{("#00955a" if s["avg_pct"]>=0 else "#d93025")};font-weight:bold;">{"+" if s["avg_pct"]>=0 else ""}{s["avg_pct"]}%</td></tr>\' for p, s in gc_stats.items()) + "</tbody></table>" if gc_stats else "<p style=\'color:#999;font-size:13px;\'>データ蓄積中...（GCシグナルが累積されると勝率が表示されます）</p>"}
+  {gc_stats_html}
 
   <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">ウェブ版で確認</h2>
   <p>
