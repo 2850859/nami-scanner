@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-05-08",
-  "total": 657,
+  "updated_at": "2026-05-11",
+  "total": 696,
   "stats": {
     "5": {
-      "total": 52,
-      "wins": 21,
-      "win_rate": 40.4,
-      "avg_pct": 0.07
+      "total": 191,
+      "wins": 102,
+      "win_rate": 53.4,
+      "avg_pct": 1.28
     }
   }
 }
