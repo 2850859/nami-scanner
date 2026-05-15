@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-15 19:02 JST",
+  "generated_at": "2026-05-16 08:00 JST",
   "market": "JPX400",
   "timeframes": {
     "1wk": [
@@ -36374,8 +36374,8 @@
   },
   "market_regime": {
     "bullish": true,
-    "ma20": 60395.9,
-    "ma50": 56659.6,
+    "ma20": 60150.6,
+    "ma50": 56608.5,
     "index": "^N225",
     "detail": "上昇トレンド"
   }
