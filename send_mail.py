@@ -47,10 +47,10 @@ def load_results(market: str) -> dict:
 
 
 def filter_signals(results: list) -> list:
-    """GC本日 + Sランク + Aランクのみ抽出"""
+    """SランクとAランクのみ抽出（GC本日は対象外）"""
     return [
         r for r in results
-        if r.get("gc_today") or r.get("rank") in ("S", "A")
+        if r.get("rank") in ("S", "A")
     ]
 
 
@@ -89,6 +89,35 @@ def make_csv(signals: list, market_label: str) -> str:
         ])
 
     return output.getvalue()
+
+
+def make_tradingview_watchlist(jpx_signals: list, sp_signals: list, label: str = "") -> str:
+    """
+    TradingView にインポートできるウォッチリスト形式のテキストを生成する。
+    フォーマット: ###,リスト名 の後に EXCHANGE:SYMBOL を1行ずつ
+    JP株: 7203.T → TSE:7203
+    US株: NVDA   → NASDAQ:NVDA（取引所不明のためTradingViewに任せる形式）
+    """
+    lines = [f"###,{label}" if label else "###,波乗りスキャナー S/A ランク"]
+
+    if jpx_signals:
+        lines.append("###,JPX400")
+        for r in jpx_signals:
+            code = str(r.get("code", ""))
+            # "7203.T" → "TSE:7203"
+            if code.upper().endswith(".T"):
+                tv_sym = "TSE:" + code[:-2]
+            else:
+                tv_sym = "TSE:" + code
+            lines.append(tv_sym)
+
+    if sp_signals:
+        lines.append("###,SP500")
+        for r in sp_signals:
+            code = str(r.get("code", ""))
+            lines.append(code)  # TradingView は米国株をシンボルのみで解決可能
+
+    return "\n".join(lines) + "\n"
 
 
 def send_email(api_key: str, to_email: str, subject: str, html_body: str, attachments: list):
@@ -288,15 +317,15 @@ def main(test: bool = False):
         sp_signals_1d = filter_signals(sp_data.get("timeframes", {}).get("1d", []))
 
     # 件数集計
-    jpx_gc = len([r for r in jpx_signals_1d if r.get("gc_today")])
+    jpx_gc = 0  # GCは集計から除外
     jpx_s  = len([r for r in jpx_signals_1d if r.get("rank") == "S"])
     jpx_a  = len([r for r in jpx_signals_1d if r.get("rank") == "A"])
 
-    sp_gc = len([r for r in sp_signals_1d if r.get("gc_today")])
+    sp_gc = 0  # GCは集計から除外
     sp_s  = len([r for r in sp_signals_1d if r.get("rank") == "S"])
     sp_a  = len([r for r in sp_signals_1d if r.get("rank") == "A"])
 
-    total_signals = jpx_gc + jpx_s + jpx_a + sp_gc + sp_s + sp_a
+    total_signals = jpx_s + jpx_a + sp_s + sp_a
 
     if total_signals == 0:
         print("INFO: 本日のシグナルなし。メール送信をスキップします。")
@@ -334,6 +363,22 @@ def main(test: bool = False):
             "filename": f"sp500_signals_{today_str}.csv",
             "content": base64.b64encode(csv_bytes).decode("utf-8"),
         })
+
+    # ========================================
+    # TradingView ウォッチリスト添付（S/Aランクのみ）
+    # ========================================
+    tv_jpx = [r for r in jpx_signals_1d if r.get("rank") in ("S", "A")]
+    tv_sp  = [r for r in sp_signals_1d  if r.get("rank") in ("S", "A")]
+    if tv_jpx or tv_sp:
+        tv_text = make_tradingview_watchlist(
+            tv_jpx, tv_sp,
+            label=f"波乗り S/A {today_str}",
+        )
+        attachments.append({
+            "filename": f"tradingview_watchlist_{today_str}.txt",
+            "content": base64.b64encode(tv_text.encode("utf-8")).decode("utf-8"),
+        })
+        print(f"  TradingView ウォッチリスト: JP {len(tv_jpx)}件 + US {len(tv_sp)}件")
 
     # ========================================
     # スクリーンショット添付（存在する場合）
@@ -401,7 +446,7 @@ def main(test: bool = False):
     # ========================================
     # メール本文（HTML）作成
     # ========================================
-    subject = f"[波乗りスキャナー] {today_label} シグナル {total_signals}件 (GC:{jpx_gc + sp_gc} / S:{jpx_s + sp_s} / A:{jpx_a + sp_a})"
+    subject = f"[波乗りスキャナー] {today_label} S:{jpx_s + sp_s}件 / A:{jpx_a + sp_a}件"
 
     html_body = f"""<!DOCTYPE html>
 <html lang="ja">
@@ -419,7 +464,6 @@ def main(test: bool = False):
     <thead>
       <tr style="background: #f5f7fa;">
         <th style="padding: 10px; text-align: left; border: 1px solid #e0e6ed;">市場</th>
-        <th style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; color: #00b85a;">GC本日</th>
         <th style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; color: #f5a623;">RANK S</th>
         <th style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; color: #f5c842;">RANK A</th>
       </tr>
@@ -427,13 +471,11 @@ def main(test: bool = False):
     <tbody>
       <tr>
         <td style="padding: 10px; border: 1px solid #e0e6ed;">JPX400</td>
-        <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{jpx_gc}件</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{jpx_s}件</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{jpx_a}件</td>
       </tr>
       <tr>
         <td style="padding: 10px; border: 1px solid #e0e6ed;">SP500</td>
-        <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{sp_gc}件</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{sp_s}件</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{sp_a}件</td>
       </tr>
@@ -442,8 +484,12 @@ def main(test: bool = False):
 
   <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">添付ファイル</h2>
   <p style="color: #666; font-size: 13px;">
-    本日のGC本日・Sランク・Aランクの銘柄一覧をCSVで添付しました。<br>
+    本日の<strong>SランクとAランク</strong>の銘柄一覧をCSVで添付しました。<br>
     Excelで開く場合は文字化けせずに表示されます。
+  </p>
+  <p style="color: #666; font-size: 13px; margin-top: 8px;">
+    <strong>tradingview_watchlist_{today_str}.txt</strong> を TradingView の
+    「ウォッチリスト → インポート」で読み込むと銘柄が一括登録できます。
   </p>
   {'<p style="color: #666; font-size: 13px; margin-top: 8px;">各市場のスキャン結果画面のスクリーンショットも添付しています。</p>' if has_screenshot else ''}
 
