@@ -34,7 +34,11 @@ def turnover_30d(df: pd.DataFrame, lookback: int = 30) -> pd.Series:
     return (df["close"] * df["volume"]).rolling(lookback).mean()
 
 
-def add_v2_indicators(df: pd.DataFrame, cfg: StrategyConfig) -> pd.DataFrame:
+def add_v2_indicators(
+    df: pd.DataFrame,
+    cfg: StrategyConfig,
+    index_df: Optional[pd.DataFrame] = None,
+) -> pd.DataFrame:
     d = df.copy()
     d["sma5"] = d["close"].rolling(5).mean()
     d["sma10"] = d["close"].rolling(10).mean()
@@ -62,7 +66,19 @@ def add_v2_indicators(df: pd.DataFrame, cfg: StrategyConfig) -> pd.DataFrame:
     min_turn = cfg.min_turnover_jpy if market == "JP" else cfg.min_turnover_usd
     d["scr_v2_liquidity"] = d["turnover30"] >= min_turn
 
-    d["screen_pass"] = d["scr_v2_trend"] & d["scr_v2_heat"] & d["scr_v2_liquidity"]
+    # 市場指数フィルタ: 指数終値 > 指数SMA20（JP=TOPIX, US=SPY）
+    if index_df is not None and "close" in index_df.columns:
+        idx_close = index_df["close"].reindex(d.index, method="ffill")
+        idx_sma20 = idx_close.rolling(20).mean()
+        d["index_close"] = idx_close
+        d["index_sma20"] = idx_sma20
+        d["scr_v2_index"] = idx_close > idx_sma20
+    else:
+        d["scr_v2_index"] = True
+
+    d["screen_pass"] = (
+        d["scr_v2_trend"] & d["scr_v2_heat"] & d["scr_v2_liquidity"] & d["scr_v2_index"]
+    )
     return d
 
 

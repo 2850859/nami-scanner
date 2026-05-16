@@ -15,7 +15,7 @@ import json
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -72,6 +72,16 @@ def _download_topix(period: str) -> pd.DataFrame:
             print(f"  TOPIX proxy: {sym}")
             return df[["close"]]
     raise SystemExit("TOPIX series download failed.")
+
+
+def _download_us_index(period: str) -> pd.DataFrame:
+    """SP500 / US 用のベンチマーク（SPY → QQQ → ^GSPC の順で試みる）"""
+    for sym in ("SPY", "QQQ", "^GSPC"):
+        df = _download_ohlcv(sym, period)
+        if df is not None and len(df) > 60:
+            print(f"  US index proxy: {sym}")
+            return df[["close"]]
+    raise SystemExit("US index download failed.")
 
 
 def fetch_sector_map(tickers: list[str], pause: float = 0.08) -> Dict[str, str]:
@@ -194,6 +204,8 @@ def run_single(
     capital: float,
     sector_map: Dict[str, str] | None,
     period: str,
+    *,
+    us_index: Optional[pd.DataFrame] = None,
 ) -> tuple:
     sector_gates = None
     if cfg.sector_filter_enabled and sector_map:
@@ -202,7 +214,7 @@ def run_single(
         print(f"  sector gates built for {len(sector_gates)} tickers")
 
     bt = Backtester(cfg, initial_capital=capital)
-    result = bt.run(panel, topix, sector_gates=sector_gates)
+    result = bt.run(panel, topix, sector_gates=sector_gates, us_index=us_index)
     metrics = calculate_metrics(result, capital)
     return result, metrics
 
@@ -280,7 +292,16 @@ def main() -> None:
     if args.tickers:
         target_tickers = args.tickers  # 明示指定で上書き
 
-    topix = _download_topix(args.period)
+    from trade_rules.wave_screening_v2 import infer_market as _infer_mkt
+    has_jp = any(_infer_mkt(t) == "JP" for t in target_tickers)
+    has_us = any(_infer_mkt(t) == "US" for t in target_tickers)
+
+    topix = _download_topix(args.period) if has_jp else None
+    us_index = _download_us_index(args.period) if has_us else None
+    # 日付アライメント用: JP優先、US onlyの場合はus_indexをtopixとして使用
+    if topix is None and us_index is not None:
+        topix = us_index
+
     panel: Dict[str, pd.DataFrame] = {}
     total = len(target_tickers)
     for idx, t in enumerate(target_tickers, 1):
@@ -370,7 +391,8 @@ def main() -> None:
             position_allocation_pct=base_cfg.position_allocation_pct,
         )
         result, metrics = run_single(
-            panel, topix, cfg, args.capital, sector_map, args.period
+            panel, topix, cfg, args.capital, sector_map, args.period,
+            us_index=us_index,
         )
         all_results[mode] = (result, metrics)
         print(f"\n=== entry_mode={mode} ===")

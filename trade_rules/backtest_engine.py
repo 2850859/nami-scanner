@@ -219,7 +219,8 @@ class SignalDetector:
                 str(df.attrs.get("ticker", "")) if df.attrs.get("ticker") else "JP"
             )
             cfg.market = mkt
-            return add_v2_indicators(df, cfg)
+            index_df = topix if topix is not None and not topix.empty else None
+            return add_v2_indicators(df, cfg, index_df=index_df)
 
         d = df.copy()
 
@@ -725,6 +726,8 @@ class Backtester:
         all_data: Dict[str, pd.DataFrame],
         topix: pd.DataFrame,
         sector_gates: Optional[Dict[str, pd.Series]] = None,
+        *,
+        us_index: Optional[pd.DataFrame] = None,
     ) -> Dict:
         cfg = self.cfg
         detector = SignalDetector(cfg)
@@ -737,7 +740,8 @@ class Backtester:
             mkt = infer_market(code)
             df_run = df.copy()
             df_run.attrs["ticker"] = code
-            d = detector.calculate_indicators(df_run, topix, market=mkt)
+            idx_df = us_index if (mkt == "US" and us_index is not None) else topix
+            d = detector.calculate_indicators(df_run, idx_df, market=mkt)
             enriched[code] = d
             sg = sector_gates.get(code) if sector_gates else None
             if cfg.sector_filter_enabled and sg is None:
