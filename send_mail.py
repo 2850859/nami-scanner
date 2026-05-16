@@ -47,10 +47,10 @@ def load_results(market: str) -> dict:
 
 
 def filter_signals(results: list) -> list:
-    """SランクとAランクのみ抽出（GC本日は対象外）"""
+    """GC本日 + Sランク + Aランクのみ抽出"""
     return [
         r for r in results
-        if r.get("rank") in ("S", "A")
+        if r.get("gc_today") or r.get("rank") in ("S", "A")
     ]
 
 
@@ -317,15 +317,15 @@ def main(test: bool = False):
         sp_signals_1d = filter_signals(sp_data.get("timeframes", {}).get("1d", []))
 
     # 件数集計
-    jpx_gc = 0  # GCは集計から除外
+    jpx_gc = len([r for r in jpx_signals_1d if r.get("gc_today")])
     jpx_s  = len([r for r in jpx_signals_1d if r.get("rank") == "S"])
     jpx_a  = len([r for r in jpx_signals_1d if r.get("rank") == "A"])
 
-    sp_gc = 0  # GCは集計から除外
+    sp_gc = len([r for r in sp_signals_1d if r.get("gc_today")])
     sp_s  = len([r for r in sp_signals_1d if r.get("rank") == "S"])
     sp_a  = len([r for r in sp_signals_1d if r.get("rank") == "A"])
 
-    total_signals = jpx_s + jpx_a + sp_s + sp_a
+    total_signals = jpx_gc + jpx_s + jpx_a + sp_gc + sp_s + sp_a
 
     if total_signals == 0:
         print("INFO: 本日のシグナルなし。メール送信をスキップします。")
@@ -446,7 +446,7 @@ def main(test: bool = False):
     # ========================================
     # メール本文（HTML）作成
     # ========================================
-    subject = f"[波乗りスキャナー] {today_label} S:{jpx_s + sp_s}件 / A:{jpx_a + sp_a}件"
+    subject = f"[波乗りスキャナー] {today_label} シグナル {total_signals}件 (GC:{jpx_gc + sp_gc} / S:{jpx_s + sp_s} / A:{jpx_a + sp_a})"
 
     html_body = f"""<!DOCTYPE html>
 <html lang="ja">
@@ -464,6 +464,7 @@ def main(test: bool = False):
     <thead>
       <tr style="background: #f5f7fa;">
         <th style="padding: 10px; text-align: left; border: 1px solid #e0e6ed;">市場</th>
+        <th style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; color: #00b85a;">GC本日</th>
         <th style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; color: #f5a623;">RANK S</th>
         <th style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; color: #f5c842;">RANK A</th>
       </tr>
@@ -471,11 +472,13 @@ def main(test: bool = False):
     <tbody>
       <tr>
         <td style="padding: 10px; border: 1px solid #e0e6ed;">JPX400</td>
+        <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{jpx_gc}件</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{jpx_s}件</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{jpx_a}件</td>
       </tr>
       <tr>
         <td style="padding: 10px; border: 1px solid #e0e6ed;">SP500</td>
+        <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{sp_gc}件</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{sp_s}件</td>
         <td style="padding: 10px; text-align: center; border: 1px solid #e0e6ed; font-weight: bold;">{sp_a}件</td>
       </tr>
@@ -484,7 +487,7 @@ def main(test: bool = False):
 
   <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">添付ファイル</h2>
   <p style="color: #666; font-size: 13px;">
-    本日の<strong>SランクとAランク</strong>の銘柄一覧をCSVで添付しました。<br>
+    本日の<strong>GC本日・SランクとAランク</strong>の銘柄一覧をCSVで添付しました。<br>
     Excelで開く場合は文字化けせずに表示されます。
   </p>
   <p style="color: #666; font-size: 13px; margin-top: 8px;">
