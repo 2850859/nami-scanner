@@ -61,6 +61,7 @@ class StrategyConfig:
     max_holding_days_us: int = 20        # JP 15日 → US 20日（利益を伸ばす）
     rsi_overbought_us: float = 75.0      # JP 80 → US 75（早めに半利確）
     sma20_dev_max_us: float = 0.10       # JP 7% → US 10%（自然乖離が大きい）
+    po_break_days_us: int = 3            # US株はPO崩れ3日連続で撤退（短期の揺れを無視）
 
     # --- cleartrade（legacy）---
     volume_multiplier: float = 2.0
@@ -523,6 +524,7 @@ class Position:
     tp1_done: bool = False
     breakeven_active: bool = False
     half_taken_rsi: bool = False
+    po_break_streak: int = 0  # PO崩れ連続日数（US株は2日連続で撤退）
 
 
 @dataclass
@@ -612,6 +614,11 @@ class Backtester:
 
         if not pd.isna(row.get("sma5")) and not pd.isna(row.get("sma10")):
             if float(row["sma5"]) < float(row["sma10"]):
+                pos.po_break_streak += 1
+            else:
+                pos.po_break_streak = 0
+            _po_thresh = cfg.po_break_days_us if pos.market == "US" else 1
+            if pos.po_break_streak >= _po_thresh:
                 capital = self._record_exit(
                     code=code,
                     pos=pos,
