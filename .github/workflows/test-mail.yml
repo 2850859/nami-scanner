@@ -1,0 +1,25 @@
+# テスト配信のみ（シグナル・バックテスト不要）
+name: テストメール配信
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-mail:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 依存関係インストール
+        run: python -m pip install --upgrade pip requests
+
+      - name: テストメール送信
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+        run: python send_mail.py --test

@@ -2,6 +2,7 @@
 スキャン結果をCSV添付メールで送信
 - GC本日 + Sランク + Aランクの銘柄をCSVに出力
 - Resend経由でメール送信
+- YouTubeチャンネル最新情報セクションを追記（YOUTUBE_API_KEY 設定時）
 """
 import os
 import json
@@ -9,7 +10,30 @@ import csv
 import io
 import base64
 import datetime
+from pathlib import Path
 import requests
+
+try:
+    from fetch_youtube_summary import build_youtube_html_section
+    _YOUTUBE_AVAILABLE = True
+except ImportError:
+    _YOUTUBE_AVAILABLE = False
+
+
+def _load_dotenv() -> None:
+    """リポジトリ直下の .env を読み込む（未設定のキーのみ上書きしない）。"""
+    path = Path(__file__).resolve().parent / ".env"
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
 
 
 def load_results(market: str) -> dict:
@@ -101,7 +125,125 @@ def send_email(api_key: str, to_email: str, subject: str, html_body: str, attach
         return False
 
 
-def main():
+def notify_backtest_email(
+    *,
+    summary_json_path: str,
+    out_dir: str,
+    prefix: str,
+    metrics: dict,
+    tickers: list,
+    period: str,
+    entry_mode: str,
+) -> bool:
+    """
+    バックテスト完了を Resend で通知する。
+    環境変数: RESEND_API_KEY, NOTIFY_EMAIL（既存のスキャン配信と同じ）
+    """
+    _load_dotenv()
+    api_key = os.environ.get("RESEND_API_KEY", "").strip()
+    to_email = os.environ.get("NOTIFY_EMAIL", "").strip()
+    if not api_key or not to_email:
+        print(
+            "  [WARN] メール通知スキップ: RESEND_API_KEY または NOTIFY_EMAIL が未設定",
+        )
+        return False
+
+    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+    tickers_s = " ".join(tickers) if tickers else "(なし)"
+    subject = (
+        f"[バックテスト完了] {prefix} ({entry_mode}) "
+        f"{now.strftime('%Y-%m-%d %H:%M')} JST"
+    )
+
+    def _fmt_num(v, digits: int = 4) -> str:
+        if v is None:
+            return ""
+        if isinstance(v, (int, float)):
+            if isinstance(v, float):
+                return f"{v:.{digits}f}"
+            return str(v)
+        return str(v)
+
+    rows_html = []
+    labels = [
+        ("total_return_pct", "総リターン (%)"),
+        ("annual_return_pct", "年率リターン (%)"),
+        ("max_drawdown_pct", "最大DD (%)"),
+        ("sharpe_ratio", "シャープレシオ"),
+        ("trade_count", "トレード数"),
+        ("win_rate_pct", "勝率 (%)"),
+        ("profit_factor", "プロフィットファクター"),
+        ("final_capital", "最終資産"),
+        ("avg_holding_days", "平均保有日数"),
+    ]
+    for key, label in labels:
+        if key in metrics:
+            rows_html.append(
+                f"<tr><td style='padding:8px;border:1px solid #e0e6ed;'>{label}</td>"
+                f"<td style='padding:8px;border:1px solid #e0e6ed;'>{_fmt_num(metrics.get(key))}</td></tr>",
+            )
+
+    err = metrics.get("error")
+    err_block = (
+        f"<p style='color:#d93025;'><strong>注意:</strong> {err}</p>" if err else ""
+    )
+
+    html_body = f"""<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8"></head>
+<body style="font-family: -apple-system, sans-serif; max-width: 640px; margin: 0 auto; padding: 20px; color: #333;">
+  <h1 style="font-size: 18px;">バックテストが完了しました</h1>
+  <p style="color:#666;font-size:14px;">
+    期間: <code>{period}</code> · entry_mode: <code>{entry_mode}</code><br>
+    銘柄: <code>{tickers_s}</code>
+  </p>
+  {err_block}
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+    <thead><tr style="background:#f5f7fa;">
+      <th style="padding:8px;text-align:left;border:1px solid #e0e6ed;">指標</th>
+      <th style="padding:8px;text-align:left;border:1px solid #e0e6ed;">値</th>
+    </tr></thead>
+    <tbody>{''.join(rows_html)}</tbody>
+  </table>
+  <p style="color:#666;font-size:13px;">添付: メトリクス・トレード明細・サマリーJSON（存在するもののみ）</p>
+</body></html>"""
+
+    attachments = []
+    od = Path(out_dir)
+    for rel_name in (
+        f"{prefix}_metrics.csv",
+        f"{prefix}_trades.csv",
+        f"{prefix}_monthly.csv",
+        f"{prefix}_by_symbol.csv",
+        f"{prefix}_by_regime.csv",
+    ):
+        p = od / rel_name
+        if p.is_file():
+            with open(p, "rb") as f:
+                raw = f.read()
+            attachments.append(
+                {
+                    "filename": rel_name,
+                    "content": base64.b64encode(raw).decode("utf-8"),
+                },
+            )
+
+    sj = Path(summary_json_path)
+    if sj.is_file():
+        with open(sj, "rb") as f:
+            raw = f.read()
+        attachments.append(
+            {
+                "filename": sj.name,
+                "content": base64.b64encode(raw).decode("utf-8"),
+            },
+        )
+
+    print(f"\n  メール通知: {to_email} （添付 {len(attachments)} 件）")
+    return send_email(api_key, to_email, subject, html_body, attachments)
+
+
+def main(test: bool = False):
+    _load_dotenv()
     api_key = os.environ.get("RESEND_API_KEY", "").strip()
     to_email = os.environ.get("NOTIFY_EMAIL", "").strip()
 
@@ -110,6 +252,20 @@ def main():
         return
     if not to_email:
         print("NG NOTIFY_EMAIL が設定されていません")
+        return
+
+    if test:
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+        subject = f"[テスト] 波乗りスキャナー配信確認 ({now.strftime('%Y-%m-%d %H:%M')} JST)"
+        html_body = """<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8"></head>
+<body style="font-family: sans-serif; padding: 20px;">
+  <p>これは <strong>テスト配信</strong> です。</p>
+  <p>RESEND_API_KEY と NOTIFY_EMAIL の組み合わせが正しく動いています。</p>
+  <p style="color:#666;font-size:13px;">本番はシグナルがある日のみ送信されます（<code>python send_mail.py</code>）。</p>
+</body></html>"""
+        print(f"\n{'='*50}\nテストメール送信\n{'='*50}\n  宛先: {to_email}\n  件名: {subject}")
+        send_email(api_key, to_email, subject, html_body, [])
         return
 
     # JST 現在日時
@@ -230,6 +386,19 @@ def main():
         )
 
     # ========================================
+    # YouTube チャンネルサマリー取得
+    # ========================================
+    print("\n[YouTube] 最新動画を取得中...")
+    youtube_section_html = ""
+    if _YOUTUBE_AVAILABLE:
+        try:
+            youtube_section_html = build_youtube_html_section()
+        except Exception as e:
+            print(f"  WARN: YouTube セクション生成失敗（メール送信は続行）: {e}")
+    else:
+        print("  INFO: fetch_youtube_summary モジュールが見つかりません — スキップします")
+
+    # ========================================
     # メール本文（HTML）作成
     # ========================================
     subject = f"[波乗りスキャナー] {today_label} シグナル {total_signals}件 (GC:{jpx_gc + sp_gc} / S:{jpx_s + sp_s} / A:{jpx_a + sp_a})"
@@ -281,6 +450,8 @@ def main():
   <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">GC追跡 勝率実績（累計 {gc_total}件）</h2>
   {gc_stats_html}
 
+  {youtube_section_html}
+
   <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">ウェブ版で確認</h2>
   <p>
     <a href="https://2850859.github.io/nami-scanner/" style="display: inline-block; padding: 10px 20px; background: #00d4ff; color: white; text-decoration: none; border-radius: 5px; margin-right: 10px;">JPX400</a>
@@ -311,4 +482,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="スキャン結果メール送信（Resend）")
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        help="シグナル有無に関係なくテストメールを1通だけ送信する",
+    )
+    args = parser.parse_args()
+    main(test=args.test)
