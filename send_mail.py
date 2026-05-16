@@ -367,8 +367,8 @@ def main(test: bool = False):
     # ========================================
     # TradingView ウォッチリスト添付（S/Aランクのみ）
     # ========================================
-    tv_jpx = [r for r in jpx_signals_1d if r.get("rank") in ("S", "A")]
-    tv_sp  = [r for r in sp_signals_1d  if r.get("rank") in ("S", "A")]
+    tv_jpx = [r for r in jpx_signals_1d if r.get("gc_today") or r.get("rank") in ("S", "A")]
+    tv_sp  = [r for r in sp_signals_1d  if r.get("gc_today") or r.get("rank") in ("S", "A")]
     if tv_jpx or tv_sp:
         tv_text = make_tradingview_watchlist(
             tv_jpx, tv_sp,
