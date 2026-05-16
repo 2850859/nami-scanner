@@ -454,8 +454,7 @@ class SignalDetector:
     ) -> List[Dict]:
         from trade_rules.wave_screening_v2 import (
             detect_entry_pattern,
-            infer_market,
-            resolve_limit_fill,
+            suggest_limit_price,
             v2_signal_score,
         )
 
@@ -464,8 +463,9 @@ class SignalDetector:
         cfg.market = mkt
         signals: List[Dict] = []
         start = max(cfg.sma_long + 2, cfg.turnover_lookback + 2)
+        slip = 1.0 + cfg.slippage
 
-        for i in range(start, len(df)):
+        for i in range(start, len(df) - 1):
             row = df.iloc[i]
             if pd.isna(row.get("sma60")) or not bool(row.get("screen_pass", False)):
                 continue
@@ -474,10 +474,11 @@ class SignalDetector:
             if entry is None:
                 continue
             pattern, limit_px = entry
-            filled = resolve_limit_fill(df, i, limit_px, cfg.limit_wait_days)
-            if filled is None:
-                continue
-            entry_date, entry_price = filled
+
+            # 翌営業日寄付成行（スリッページ込み）
+            next_row = df.iloc[i + 1]
+            entry_date = df.index[i + 1]
+            entry_price = float(next_row["open"]) * slip
 
             signals.append(
                 {
@@ -485,14 +486,14 @@ class SignalDetector:
                     "date": df.index[i],
                     "entry_date": entry_date,
                     "entry_price": entry_price,
-                    "limit_price": limit_px,
+                    "limit_price": limit_px,  # 参考値として保持
                     "pullback_low": float(row.get("recent_low_5d", row["low"])),
                     "signal_score": v2_signal_score(row, cfg.sma20_dev_max),
                     "sma20_dev": float(row["sma20_dev"]),
                     "rsi14": float(row["rsi14"]),
                     "trigger": pattern,
                     "entry_pattern": pattern,
-                    "entry_mode": "limit",
+                    "entry_mode": "next_open",
                 }
             )
         return signals

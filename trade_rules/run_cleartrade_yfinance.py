@@ -207,9 +207,34 @@ def run_single(
     return result, metrics
 
 
+def _load_universe(name: str) -> list[str]:
+    """jpx400 / sp500 / all の全ティッカーリストを返す。"""
+    tickers: list[str] = []
+    if name in ("jpx400", "all"):
+        try:
+            import sys, os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+            from scan_jpx400 import TICKERS as JPX_TICKERS
+            tickers += [t for t, _ in JPX_TICKERS]
+        except Exception as e:
+            print(f"  [WARN] JPX400リスト読込失敗: {e}")
+    if name in ("sp500", "all"):
+        try:
+            import sys, os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+            from scan_sp500 import SP500_TICKERS
+            tickers += [t for t, _ in SP500_TICKERS]
+        except Exception as e:
+            print(f"  [WARN] SP500リスト読込失敗: {e}")
+    return tickers
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--tickers", nargs="+", required=True)
+    ap.add_argument("--tickers", nargs="+", default=None,
+                    help="個別ティッカー指定（--universe と併用可・上書き）")
+    ap.add_argument("--universe", choices=["jpx400", "sp500", "all"], default=None,
+                    help="全銘柄ユニバース: jpx400 / sp500 / all")
     ap.add_argument("--period", default="3y")
     ap.add_argument("--capital", type=float, default=100_000_000.0)
     ap.add_argument("--out", default="results/cleartrade_backtest.json")
@@ -245,26 +270,61 @@ def main() -> None:
     )
     args = ap.parse_args()
 
+    if not args.tickers and not args.universe:
+        ap.error("--tickers または --universe を指定してください")
+
+    target_tickers: list[str] = []
+    if args.universe:
+        target_tickers = _load_universe(args.universe)
+        print(f"  Universe: {args.universe}  ({len(target_tickers)} 銘柄)")
+    if args.tickers:
+        target_tickers = args.tickers  # 明示指定で上書き
+
     topix = _download_topix(args.period)
     panel: Dict[str, pd.DataFrame] = {}
-    for t in args.tickers:
+    total = len(target_tickers)
+    for idx, t in enumerate(target_tickers, 1):
+        print(f"  [{idx:3}/{total}] {t}", end=" ")
         d = _download_ohlcv(t, args.period)
         if d is not None:
             panel[t] = d
-            print(f"  OK {t} rows={len(d)}")
+            print(f"rows={len(d)}")
         else:
-            print(f"  SKIP {t}")
+            print("SKIP")
+        if total > 10:
+            time.sleep(0.15)  # レート制限対策
 
     if not panel:
         raise SystemExit("No valid tickers")
 
-    common: pd.Index | None = None
-    for d in panel.values():
-        common = d.index if common is None else common.intersection(d.index)
-    common = common.sort_values()
-    topix = topix.reindex(common, method="ffill").dropna()
-    common = topix.index
-    panel = {k: v.loc[common] for k, v in panel.items()}
+    # JP / US を分けて共通日を算出（混在時はそれぞれの取引日を維持）
+    from trade_rules.wave_screening_v2 import infer_market
+    jp_panel = {k: v for k, v in panel.items() if infer_market(k) == "JP"}
+    us_panel = {k: v for k, v in panel.items() if infer_market(k) == "US"}
+
+    def _align_panel(sub: Dict[str, pd.DataFrame], topix_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+        if not sub:
+            return {}
+        common: pd.Index | None = None
+        for d in sub.values():
+            common = d.index if common is None else common.intersection(d.index)
+        common = common.sort_values()
+        t = topix_df.reindex(common, method="ffill").dropna()
+        common = t.index
+        return {k: v.loc[common] for k, v in sub.items()}
+
+    if jp_panel and us_panel:
+        # JP + US 混在: 共通日で揃える
+        panel_aligned = _align_panel(panel, topix)
+        topix_aligned = topix.reindex(list(panel_aligned.values())[0].index, method="ffill").dropna()
+        panel = panel_aligned
+        topix = topix_aligned
+    elif jp_panel:
+        panel = _align_panel(jp_panel, topix)
+        topix = topix.reindex(list(panel.values())[0].index, method="ffill").dropna()
+    else:
+        panel = _align_panel(us_panel, topix)
+        topix = topix.reindex(list(panel.values())[0].index, method="ffill").dropna()
 
     sector_map = fetch_sector_map(list(panel.keys())) if args.sector_filter else None
 
