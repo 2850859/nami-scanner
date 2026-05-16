@@ -55,14 +55,17 @@ def add_v2_indicators(
         & (d["sma20"] > d["sma60"])
         & (d["close"] > d["sma60"])
     )
+
+    market = cfg.market or "JP"
+    # US株は乖離率上限を緩和（自然な乖離が大きいため）
+    dev_max = cfg.sma20_dev_max if market == "JP" else getattr(cfg, "sma20_dev_max_us", cfg.sma20_dev_max)
     rsi_ok = (d["rsi14"] >= cfg.rsi_min) & (d["rsi14"] <= cfg.rsi_max)
-    dev_ok = d["sma20_dev"] < cfg.sma20_dev_max
+    dev_ok = d["sma20_dev"] < dev_max
     hot_exclude = (d["rsi14"] >= cfg.rsi_hot_min) & (d["rsi14"] <= cfg.rsi_max) & (
         d["sma20_dev"] > cfg.sma20_dev_hot
     )
     d["scr_v2_heat"] = rsi_ok & dev_ok & ~hot_exclude
 
-    market = cfg.market or "JP"
     min_turn = cfg.min_turnover_jpy if market == "JP" else cfg.min_turnover_usd
     d["scr_v2_liquidity"] = d["turnover30"] >= min_turn
 

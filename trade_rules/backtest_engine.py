@@ -56,6 +56,12 @@ class StrategyConfig:
     position_allocation_pct: float = 0.125
     max_sector_allocation_pct: float = 0.30
 
+    # --- US株専用オーバーライド（None のとき汎用値を使用）---
+    stop_loss_pct_us: float = 0.05       # JP 7% → US 5%（損失を小さく）
+    max_holding_days_us: int = 20        # JP 15日 → US 20日（利益を伸ばす）
+    rsi_overbought_us: float = 75.0      # JP 80 → US 75（早めに半利確）
+    sma20_dev_max_us: float = 0.10       # JP 7% → US 10%（自然乖離が大きい）
+
     # --- cleartrade（legacy）---
     volume_multiplier: float = 2.0
     breakout_lookback: int = 20
@@ -513,6 +519,7 @@ class Position:
     shares: int
     signal_score: float
     pullback_low: float
+    market: str = "JP"
     tp1_done: bool = False
     breakeven_active: bool = False
     half_taken_rsi: bool = False
@@ -619,7 +626,8 @@ class Backtester:
                 )
                 return True, capital
 
-        if row["close"] <= pos.entry_price * (1 - cfg.stop_loss_pct):
+        _sl = cfg.stop_loss_pct_us if pos.market == "US" else cfg.stop_loss_pct
+        if row["close"] <= pos.entry_price * (1 - _sl):
             capital = self._record_exit(
                 code=code,
                 pos=pos,
@@ -656,7 +664,8 @@ class Backtester:
         ):
             pos.breakeven_active = True
 
-        if not pd.isna(rsi) and float(rsi) > cfg.rsi_overbought and not pos.half_taken_rsi:
+        _rsi_ob = cfg.rsi_overbought_us if pos.market == "US" else cfg.rsi_overbought
+        if not pd.isna(rsi) and float(rsi) > _rsi_ob and not pos.half_taken_rsi:
             half = pos.shares // 2
             if half > 0:
                 capital = self._record_exit(
@@ -704,7 +713,8 @@ class Backtester:
                 )
                 return True, capital
 
-        if hd >= cfg.max_holding_days:
+        _max_hd = cfg.max_holding_days_us if pos.market == "US" else cfg.max_holding_days
+        if hd >= _max_hd:
             capital = self._record_exit(
                 code=code,
                 pos=pos,
@@ -783,7 +793,8 @@ class Backtester:
                         to_close.append(code)
                     continue
 
-                stop1 = row["close"] <= pos.entry_price * (1 - cfg.stop_loss_pct)
+                _sl_ct = cfg.stop_loss_pct_us if pos.market == "US" else cfg.stop_loss_pct
+                stop1 = row["close"] <= pos.entry_price * (1 - _sl_ct)
                 stop2 = row["close"] < pos.pullback_low
                 if stop1 or stop2:
                     reason = "stop_loss_pct" if stop1 else "stop_loss_pullback_low"
@@ -811,7 +822,8 @@ class Backtester:
                     to_close.append(code)
                     continue
 
-                if hd >= cfg.max_holding_days:
+                _max_hd_ct = cfg.max_holding_days_us if pos.market == "US" else cfg.max_holding_days
+                if hd >= _max_hd_ct:
                     pnl = (next_open - pos.entry_price) * pos.shares - (
                         next_open + pos.entry_price
                     ) * pos.shares * cfg.commission
@@ -911,8 +923,9 @@ class Backtester:
                         total_equity * cfg.position_allocation_pct / sig["entry_price"]
                     )
                 else:
+                    _sl_sz = cfg.stop_loss_pct_us if infer_market(sig["code"]) == "US" else cfg.stop_loss_pct
                     risk_amount = total_equity * cfg.risk_per_trade
-                    shares = int(risk_amount / (sig["entry_price"] * cfg.stop_loss_pct))
+                    shares = int(risk_amount / (sig["entry_price"] * _sl_sz))
 
                 if shares <= 0:
                     continue
@@ -929,6 +942,7 @@ class Backtester:
                             shares=shares,
                             signal_score=sig["signal_score"],
                             pullback_low=float(sig["pullback_low"]),
+                            market=infer_market(sig["code"]),
                         )
                 else:
                     weakest = min(positions.values(), key=lambda p: p.signal_score)
@@ -972,6 +986,7 @@ class Backtester:
                                         shares=shares,
                                         signal_score=sig["signal_score"],
                                         pullback_low=float(sig["pullback_low"]),
+                                        market=infer_market(sig["code"]),
                                     )
 
             total_equity = capital
