@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!--
+  バックテスト完了メールの見た目シミュレーション（notify_backtest_email と同じ HTML 構造・サンプル数値）
+  ブラウザで開いてください。実送信はしていません。
+-->
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>シミュレーション: バックテスト完了メール</title>
+</head>
+<body style="background:#eee;padding:24px;font-family:sans-serif;">
+  <div style="max-width:720px;margin:0 auto 20px;background:#fff;border-radius:8px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+    <p style="margin:0 0 8px;color:#666;font-size:13px;">メール受信箱でこう見えるイメージ（シミュレーション）</p>
+    <p style="margin:0;font-size:14px;"><strong>件名:</strong> [バックテスト完了] cleartrade (next_open) 2026-05-09 14:30 JST</p>
+    <p style="margin:8px 0 0;font-size:13px;color:#666;"><strong>差出人:</strong> Nami Scanner &lt;onboarding@resend.dev&gt;</p>
+    <p style="margin:4px 0 0;font-size:13px;color:#666;"><strong>宛先:</strong> 環境変数 NOTIFY_EMAIL のアドレス</p>
+    <p style="margin:12px 0 0;font-size:12px;color:#999;">添付: cleartrade_metrics.csv / cleartrade_trades.csv / cleartrade_backtest.json など（実行時に存在したファイル）</p>
+  </div>
+
+  <div style="max-width:720px;margin:0 auto;background:#fafafa;border:1px solid #ddd;border-radius:8px;overflow:hidden;">
+    <p style="margin:0;padding:10px 16px;font-size:12px;color:#888;background:#f0f0f0;">▼ 本文（HTML メール・実装どおりのマークアップ）</p>
+    <div style="font-family:-apple-system,sans-serif;max-width:640px;margin:0 auto;padding:20px;color:#333;background:#fff;">
+      <h1 style="font-size:18px;margin-top:0;">バックテストが完了しました</h1>
+      <p style="color:#666;font-size:14px;">
+        期間: <code>3y</code> · entry_mode: <code>next_open</code><br>
+        銘柄: <code>7203.T 6758.T 9984.T</code>
+      </p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+        <thead>
+          <tr style="background:#f5f7fa;">
+            <th style="padding:8px;text-align:left;border:1px solid #e0e6ed;">指標</th>
+            <th style="padding:8px;text-align:left;border:1px solid #e0e6ed;">値</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:8px;border:1px solid #e0e6ed;">総リターン (%)</td><td style="padding:8px;border:1px solid #e0e6ed;">-8.2140</td></tr>
+          <tr><td style="padding:8px;border:1px solid #e0e6ed;">年率リターン (%)</td><td style="padding:8px;border:1px solid #e0e6ed;">-2.8030</td></tr>
+          <tr><td style="padding:8px;border:1px solid #e0e6ed;">最大DD (%)</td><td style="padding:8px;border:1px solid #e0e6ed;">14.9200</td></tr>
+          <tr><td style="padding:8px;border:1px solid #e0e6ed;">シャープレシオ</td><td style="padding:8px;border:1px solid #e0e6ed;">-0.4125</td></tr>
+          <tr><td style="padding:8px;border:1px solid #e0e6ed;">トレード数</td><td style="padding:8px;border:1px solid #e0e6ed;">12</td></tr>
+          <tr><td style="padding:8px;border:1px solid #e0e6ed;">勝率 (%)</td><td style="padding:8px;border:1px solid #e0e6ed;">41.6667</td></tr>
+          <tr><td style="padding:8px;border:1px solid #e0e6ed;">プロフィットファクター</td><td style="padding:8px;border:1px solid #e0e6ed;">0.7800</td></tr>
+          <tr><td style="padding:8px;border:1px solid #e0e6ed;">最終資産</td><td style="padding:8px;border:1px solid #e0e6ed;">99178600.0000</td></tr>
+          <tr><td style="padding:8px;border:1px solid #e0e6ed;">平均保有日数</td><td style="padding:8px;border:1px solid #e0e6ed;">6.2500</td></tr>
+        </tbody>
+      </table>
+      <p style="color:#666;font-size:13px;">添付: メトリクス・トレード明細・サマリーJSON（存在するもののみ）</p>
+    </div>
+  </div>
+
+  <div style="max-width:720px;margin:16px auto 0;padding:12px 16px;background:#fff8e6;border:1px solid #f5d76e;border-radius:8px;font-size:13px;color:#663;">
+    <strong>トレードが一件も無いとき:</strong> 表の上に
+    <span style="color:#d93025;font-weight:bold;">注意: No trades executed</span>
+    のような赤字ブロックが付きます（metrics に error がある場合）。
+  </div>
+</body>
+</html>

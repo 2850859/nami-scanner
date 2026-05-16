@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>波乗りスキャナー × YouTube連動｜AI-Driven School 第5回課題</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --card2: #1e2a3a;
+      --accent: #00b4d8;
+      --accent2: #f97316;
+      --text: #e8eef4;
+      --muted: #8b9aab;
+      --ok: #2dd4bf;
+      --warn: #f59e0b;
+      --danger: #f87171;
+      --border: #2d3a4d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .page { max-width: 900px; margin: 0 auto; padding: 2rem 1.2rem 5rem; }
+
+    /* ── バナー ── */
+    .update-banner {
+      background: #1a3350;
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 0.8rem 1.1rem;
+      margin-bottom: 2rem;
+      font-size: 0.92rem;
+    }
+    .update-banner strong { color: var(--ok); }
+
+    /* ── ヒーロー ── */
+    .hero {
+      text-align: center;
+      padding: 2.5rem 1rem 2rem;
+    }
+    .hero h1 {
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      line-height: 1.35;
+      margin-bottom: 0.8rem;
+    }
+    .hero .subtitle {
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 540px;
+      margin: 0 auto 1.5rem;
+    }
+    .hero .tag-row {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .tag {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.25rem 0.85rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .tag.accent { border-color: var(--accent); color: var(--accent); }
+    .tag.orange { border-color: var(--accent2); color: var(--accent2); }
+
+    /* ── セクション ── */
+    .section { margin: 3rem 0; }
+    .section-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+      line-height: 1.4;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ok);
+      margin: 1.5rem 0 0.5rem;
+    }
+    .lead { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.2rem; }
+
+    /* ── カード ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .card-orange { border-color: var(--accent2); }
+    .card-ok { border-color: var(--ok); }
+
+    /* ── 2カラムグリッド ── */
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
+
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    @media (max-width: 600px) { .grid3 { grid-template-columns: 1fr; } }
+
+    /* ── ステータスカード（数値） ── */
+    .stat-card {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem;
+      text-align: center;
+    }
+    .stat-value { font-size: 2rem; font-weight: 800; color: var(--accent); }
+    .stat-value.red { color: var(--danger); }
+    .stat-value.green { color: var(--ok); }
+    .stat-label { font-size: 0.82rem; color: var(--muted); margin-top: 0.25rem; }
+
+    /* ── ノートブロック ── */
+    .note {
+      background: var(--card2);
+      border-left: 4px solid var(--accent);
+      padding: 0.85rem 1.1rem;
+      margin: 1.2rem 0;
+      font-size: 0.92rem;
+      border-radius: 0 8px 8px 0;
+    }
+    .note.orange { border-left-color: var(--accent2); }
+    .note.ok { border-left-color: var(--ok); }
+    .note.warn { border-left-color: var(--warn); }
+
+    /* ── フロースタップ ── */
+    .flow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0; }
+    .flow-step {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.9rem;
+      font-size: 0.88rem;
+      text-align: center;
+    }
+    .flow-step.new { border-color: var(--accent2); color: var(--accent2); }
+    .flow-step.exist { border-color: var(--accent); }
+    .flow-arrow { color: var(--muted); font-size: 1.1rem; flex-shrink: 0; }
+
+    /* ── テーブル ── */
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 1rem 0; }
+    th, td { border: 1px solid var(--border); padding: 0.6rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: #243044; color: var(--ok); }
+    tr.warn-row td { background: #2a1f1f; }
+    tr.ok-row td { background: #1a2a1a; }
+
+    /* ── ビフォー/アフター ── */
+    .ba-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.2rem 0; }
+    @media (max-width: 580px) { .ba-wrap { grid-template-columns: 1fr; } }
+    .ba-card { border-radius: 10px; padding: 1.1rem 1.2rem; }
+    .ba-before { background: #2a1a1a; border: 1px solid #5a2020; }
+    .ba-after  { background: #1a2a1a; border: 1px solid #1e5c3a; }
+    .ba-label  { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.6rem; }
+    .ba-before .ba-label { color: var(--danger); }
+    .ba-after  .ba-label { color: var(--ok); }
+    .ba-item   { font-size: 0.88rem; margin: 0.4rem 0; padding-left: 1rem; position: relative; }
+    .ba-item::before { content: "→"; position: absolute; left: 0; }
+    .ba-before .ba-item::before { color: var(--danger); }
+    .ba-after  .ba-item::before { color: var(--ok); }
+
+    /* ── 図解コンテナ ── */
+    .diagram {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin: 1.25rem 0;
+      overflow-x: auto;
+    }
+    .diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+    /* ── チャンネルリスト ── */
+    .channel-list { list-style: none; margin: 0.75rem 0; }
+    .channel-list li {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .channel-list li:last-child { border-bottom: none; }
+    .ch-icon {
+      width: 32px; height: 32px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: var(--accent); flex-shrink: 0;
+    }
+    .ch-icon.base { border-color: var(--ok); color: var(--ok); }
+    .ch-meta { color: var(--muted); font-size: 0.8rem; }
+
+    /* ── 矛盾アラートサンプル ── */
+    .alert-sample {
+      background: #2a1f1f;
+      border: 1px solid #7f2020;
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      font-size: 0.88rem;
+      margin: 0.5rem 0;
+    }
+    .alert-badge { display: inline-block; background: #7f2020; color: #fca5a5; border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.78rem; font-weight: 700; margin-right: 0.4rem; }
+
+    /* ── メールサンプル ── */
+    .mail-mock {
+      background: #fff;
+      color: #333;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 1.2rem 0;
+      font-family: -apple-system, "Segoe UI", sans-serif;
+    }
+    .mail-header { background: #f0f4f8; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0; font-size: 0.82rem; color: #666; }
+    .mail-subject { font-weight: 700; color: #222; font-size: 0.95rem; margin-bottom: 0.2rem; }
+    .mail-body { padding: 1rem; font-size: 0.85rem; line-height: 1.6; }
+    .mail-section { margin: 0.8rem 0; }
+    .mail-section-title { font-size: 0.78rem; font-weight: 700; color: #0099cc; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.25rem; margin-bottom: 0.5rem; }
+    .mail-row { display: flex; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.82rem; }
+    .mail-ch { color: #555; min-width: 120px; }
+    .mail-summary { color: #333; flex: 1; }
+    .mail-warn-badge { background: #fee2e2; color: #dc2626; border-radius: 3px; padding: 0.05rem 0.3rem; font-size: 0.73rem; font-weight: 700; flex-shrink: 0; }
+
+    /* ── フッター ── */
+    footer {
+      margin-top: 4rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    code {
+      background: #243044;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- バナー -->
+  <div class="update-banner" role="status">
+    <strong>ページ更新 2026-05-15</strong>
+    — 第5回課題：YouTube連動のペイン構成・ソリューション設計を追加。株を知らない方にも伝わるよう図解とたとえ話で構成。
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       ヒーロー
+  ════════════════════════════════════════════ -->
+  <div class="hero">
+    <p class="section-label">AI-Driven School 第5回課題</p>
+    <h1>波乗りスキャナー<br>× YouTube情報 自動連動</h1>
+    <p class="subtitle">毎朝5つのYouTubeチャンネルを追うのが大変 → メール1通で全部まとめて届く仕組みを作る</p>
+    <div class="tag-row">
+      <span class="tag accent">GitHub Actions</span>
+      <span class="tag accent">Python</span>
+      <span class="tag orange">YouTube API</span>
+      <span class="tag orange">Gemini AI</span>
+      <span class="tag">Resend メール</span>
+    </div>
+
+    <!-- ヒーロー図解 -->
+    <div class="diagram">
+      <svg viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg" width="700" height="160">
+        <defs>
+          <marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6 Z" fill="#00b4d8"/>
+          </marker>
+        </defs>
+
+        <!-- Before: 5つの動画アイコン -->
+        <text x="115" y="18" text-anchor="middle" fill="#8b9aab" font-size="11" font-family="sans-serif">毎日やっていたこと</text>
+        <rect x="10"  y="28" width="55" height="35" rx="5" fill="#2a1a1a" stroke="#7f2020" stroke-width="1.5"/>
+        <text x="37"  y="46" text-anchor="middle" fill="#fca5a5" font-size="10">動画 1</text>
+        <rect x="72"  y="28" width="55" height="35" rx="5" fill="#2a1a1a" stroke="#7f2020" stroke-width="1.5"/>
+        <text x="99"  y="46" text-anchor="middle" fill="#fca5a5" font-size="10">動画 2</text>
+        <rect x="134" y="28" width="55" height="35" rx="5" fill="#2a1a1a" stroke="#7f2020" stroke-width="1.5"/>
+        <text x="161" y="46" text-anchor="middle" fill="#fca5a5" font-size="10">動画 3</text>
+        <rect x="10"  y="74" width="55" height="35" rx="5" fill="#2a1a1a" stroke="#7f2020" stroke-width="1.5"/>
+        <text x="37"  y="92" text-anchor="middle" fill="#fca5a5" font-size="10">動画 4</text>
+        <rect x="72"  y="74" width="55" height="35" rx="5" fill="#2a1a1a" stroke="#7f2020" stroke-width="1.5"/>
+        <text x="99"  y="92" text-anchor="middle" fill="#fca5a5" font-size="10">動画 5</text>
+
+        <!-- クロスバツ -->
+        <text x="155" y="96" fill="#f87171" font-size="18" font-weight="bold">×</text>
+
+        <!-- ラベル -->
+        <text x="90" y="130" text-anchor="middle" fill="#f87171" font-size="11">1本20〜40分 × 5本</text>
+        <text x="90" y="144" text-anchor="middle" fill="#f87171" font-size="11">毎日は無理…</text>
+
+        <!-- 矢印 -->
+        <line x1="230" y1="80" x2="290" y2="80" stroke="#00b4d8" stroke-width="2.5" marker-end="url(#ah)"/>
+        <text x="260" y="70" text-anchor="middle" fill="#8b9aab" font-size="10">自動化</text>
+
+        <!-- After: メール1通 -->
+        <text x="450" y="18" text-anchor="middle" fill="#2dd4bf" font-size="11">作った仕組み</text>
+        <rect x="300" y="28" width="300" height="115" rx="10" fill="#1a2a1a" stroke="#2dd4bf" stroke-width="2"/>
+        <text x="450" y="52" text-anchor="middle" fill="#e8eef4" font-size="13" font-weight="bold">メール 1通</text>
+
+        <rect x="316" y="62" width="130" height="20" rx="4" fill="#1a3320" stroke="#2dd4bf" stroke-width="1"/>
+        <text x="381" y="76" text-anchor="middle" fill="#2dd4bf" font-size="10">スキャン結果（既存）</text>
+
+        <rect x="316" y="88" width="130" height="20" rx="4" fill="#1e2a10" stroke="#f97316" stroke-width="1"/>
+        <text x="381" y="102" text-anchor="middle" fill="#f97316" font-size="10">YouTube要約 × 5ch（新規）</text>
+
+        <rect x="316" y="114" width="130" height="22" rx="4" fill="#2a1f10" stroke="#f59e0b" stroke-width="1"/>
+        <text x="381" y="128" text-anchor="middle" fill="#f59e0b" font-size="10">矛盾アラート（新規）</text>
+
+        <text x="470" y="85" fill="#e8eef4" font-size="11">朝5分で</text>
+        <text x="470" y="102" fill="#2dd4bf" font-size="13" font-weight="bold">判断完了</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       株スキャナーとは何か（初心者向け）
+  ════════════════════════════════════════════ -->
+  <div class="section">
+    <p class="section-label">背景</p>
+    <h2>そもそも波乗りスキャナーとは？</h2>
+    <p class="lead">株を知らない方向けに、身近なたとえで説明します。</p>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Amazonの絞り込みフィルター、の株版</h3>
+        <p style="font-size:0.9rem;">Amazonで「3,000円以下・評価4.5以上・在庫あり・翌日配送」と絞り込むように、<strong>約4,000銘柄の株</strong>を毎日自動でフィルタリングします。</p>
+        <div class="diagram" style="padding:0.75rem;">
+          <svg viewBox="0 0 320 110" xmlns="http://www.w3.org/2000/svg" width="320" height="110">
+            <defs>
+              <marker id="af" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L7,3 L0,6 Z" fill="#00b4d8"/>
+              </marker>
+            </defs>
+            <!-- 全銘柄 -->
+            <rect x="5" y="10" width="80" height="90" rx="6" fill="#1e2a3a" stroke="#2d3a4d" stroke-width="1.5"/>
+            <text x="45" y="35" text-anchor="middle" fill="#8b9aab" font-size="11">全銘柄</text>
+            <text x="45" y="55" text-anchor="middle" fill="#e8eef4" font-size="20" font-weight="800">4,000+</text>
+            <text x="45" y="90" text-anchor="middle" fill="#8b9aab" font-size="10">毎日チェック不可</text>
+
+            <!-- フィルター -->
+            <line x1="88" y1="55" x2="118" y2="55" stroke="#00b4d8" stroke-width="2" marker-end="url(#af)"/>
+            <rect x="120" y="30" width="80" height="50" rx="6" fill="#243044" stroke="#00b4d8" stroke-width="1.5"/>
+            <text x="160" y="50" text-anchor="middle" fill="#e8eef4" font-size="10">波乗り条件</text>
+            <text x="160" y="64" text-anchor="middle" fill="#8b9aab" font-size="9">出来高・価格・傾き</text>
+            <text x="160" y="76" text-anchor="middle" fill="#8b9aab" font-size="9">3条件すべてOK</text>
+            <line x1="205" y1="55" x2="235" y2="55" stroke="#00b4d8" stroke-width="2" marker-end="url(#af)"/>
+
+            <!-- 結果 -->
+            <rect x="237" y="28" width="75" height="54" rx="6" fill="#1a2a1a" stroke="#2dd4bf" stroke-width="1.5"/>
+            <text x="274" y="48" text-anchor="middle" fill="#8b9aab" font-size="11">厳選</text>
+            <text x="274" y="66" text-anchor="middle" fill="#2dd4bf" font-size="20" font-weight="800">数十</text>
+            <text x="274" y="77" text-anchor="middle" fill="#2dd4bf" font-size="9">銘柄のみ</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>ゴールデンクロスとは</h3>
+        <p style="font-size:0.9rem;">「短期の平均価格」が「長期の平均価格」を下から上に突き抜けた瞬間。<br>波に乗り始めるタイミングを示す信号です。</p>
+        <div class="diagram" style="padding:0.75rem;">
+          <svg viewBox="0 0 300 110" xmlns="http://www.w3.org/2000/svg" width="300" height="110">
+            <!-- 軸 -->
+            <line x1="30" y1="100" x2="290" y2="100" stroke="#2d3a4d" stroke-width="1.5"/>
+            <line x1="30" y1="15"  x2="30"  y2="100" stroke="#2d3a4d" stroke-width="1.5"/>
+            <text x="160" y="112" text-anchor="middle" fill="#8b9aab" font-size="9">日数 →</text>
+            <text x="10" y="55" fill="#8b9aab" font-size="9" transform="rotate(-90,10,55)">価格</text>
+
+            <!-- MA10（長期・青） -->
+            <polyline points="35,82 70,78 105,72 140,68 175,62 210,56 245,50 280,44"
+              fill="none" stroke="#00b4d8" stroke-width="2"/>
+            <text x="282" y="43" fill="#00b4d8" font-size="9">MA10</text>
+
+            <!-- MA5（短期・緑）最初は下、途中で上抜け -->
+            <polyline points="35,90 70,85 105,80 140,72 175,60 210,50 245,43 280,38"
+              fill="none" stroke="#2dd4bf" stroke-width="2"/>
+            <text x="282" y="37" fill="#2dd4bf" font-size="9">MA5</text>
+
+            <!-- クロス点 -->
+            <circle cx="165" cy="61" r="5" fill="#f59e0b"/>
+            <!-- 垂直線 -->
+            <line x1="165" y1="20" x2="165" y2="100" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="167" y="28" fill="#f59e0b" font-size="9">ゴールデン</text>
+            <text x="167" y="39" fill="#f59e0b" font-size="9">クロス</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>まとめ</strong>：スキャナーは「今日、波に乗り始めそうな銘柄を自動で見つけ、朝メールで教えてくれる」ツールです。ヤフーファイナンスのデータを使って毎日自動で動きます。
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       課題（ペイン）
+  ════════════════════════════════════════════ -->
+  <div class="section">
+    <p class="section-label">課題（ペイン）</p>
+    <h2>解決したい「困りごと」</h2>
+
+    <div class="grid3" style="margin-bottom:1.5rem;">
+      <div class="stat-card">
+        <div class="stat-value">5</div>
+        <div class="stat-label">参考にしているYouTubeチャンネル数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value red">60分</div>
+        <div class="stat-label">全部見ようとしたときの時間/日</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value red">0</div>
+        <div class="stat-label">実際に全部見られた日数（不可能）</div>
+      </div>
+    </div>
+
+    <!-- 困りごとの図解 -->
+    <div class="diagram">
+      <svg viewBox="0 0 700 170" xmlns="http://www.w3.org/2000/svg" width="700" height="170">
+        <defs>
+          <marker id="ra" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#f87171"/>
+          </marker>
+        </defs>
+
+        <!-- 5ch icons -->
+        <text x="120" y="16" text-anchor="middle" fill="#8b9aab" font-size="11" font-family="sans-serif">参考チャンネル（5つ）</text>
+        <rect x="10"  y="26" width="70" height="42" rx="6" fill="#2a1a1a" stroke="#7f2020" stroke-width="1.5"/>
+        <text x="45"  y="44" text-anchor="middle" fill="#fca5a5" font-size="9">波乗りチャート</text>
+        <text x="45"  y="57" text-anchor="middle" fill="#fca5a5" font-size="9">向川 ⭐</text>
+
+        <rect x="88"  y="26" width="70" height="42" rx="6" fill="#2a1a1a" stroke="#7f2020" stroke-width="1.5"/>
+        <text x="123" y="44" text-anchor="middle" fill="#fca5a5" font-size="9">1up投資</text>
+        <text x="123" y="57" text-anchor="middle" fill="#8b9aab" font-size="9">20〜40分/本</text>
+
+        <rect x="166" y="26" width="70" height="42" rx="6" fill="#2a1a1a" stroke="#7f2020" stroke-width="1.5"/>
+        <text x="201" y="44" text-anchor="middle" fill="#fca5a5" font-size="9">CLEARTRADE</text>
+        <text x="201" y="57" text-anchor="middle" fill="#8b9aab" font-size="9">20〜40分/本</text>
+
+        <rect x="10"  y="80" width="70" height="42" rx="6" fill="#2a1a1a" stroke="#7f2020" stroke-width="1.5"/>
+        <text x="45"  y="98" text-anchor="middle" fill="#fca5a5" font-size="9">トレードラボ</text>
+        <text x="45"  y="111" text-anchor="middle" fill="#8b9aab" font-size="9">20〜40分/本</text>
+
+        <rect x="88"  y="80" width="70" height="42" rx="6" fill="#2a1a1a" stroke="#7f2020" stroke-width="1.5"/>
+        <text x="123" y="98" text-anchor="middle" fill="#fca5a5" font-size="9">お茶のゴールド</text>
+        <text x="123" y="111" text-anchor="middle" fill="#fca5a5" font-size="9">マン</text>
+
+        <!-- 人物（困惑） -->
+        <circle cx="265" cy="60" r="20" fill="#2a1a1a" stroke="#f87171" stroke-width="2"/>
+        <text x="265" y="65" text-anchor="middle" fill="#fca5a5" font-size="13">困</text>
+
+        <!-- 矢印 5本 -->
+        <line x1="82"  y1="47" x2="242" y2="55" stroke="#f87171" stroke-width="1.5" marker-end="url(#ra)"/>
+        <line x1="160" y1="47" x2="245" y2="50" stroke="#f87171" stroke-width="1.5" marker-end="url(#ra)"/>
+        <line x1="238" y1="47" x2="248" y2="47" stroke="#f87171" stroke-width="1.5" marker-end="url(#ra)"/>
+        <line x1="82"  y1="100" x2="243" y2="66" stroke="#f87171" stroke-width="1.5" marker-end="url(#ra)"/>
+        <line x1="160" y1="100" x2="244" y2="68" stroke="#f87171" stroke-width="1.5" marker-end="url(#ra)"/>
+
+        <!-- 吹き出し -->
+        <rect x="295" y="28" width="175" height="65" rx="8" fill="#2a1a1a" stroke="#f87171" stroke-width="1.5"/>
+        <polygon points="295,55 275,55 295,65" fill="#2a1a1a" stroke="#f87171" stroke-width="1"/>
+        <text x="382" y="48" text-anchor="middle" fill="#fca5a5" font-size="11">全部見る時間がない</text>
+        <text x="382" y="64" text-anchor="middle" fill="#fca5a5" font-size="11">見落とすと後で後悔</text>
+        <text x="382" y="80" text-anchor="middle" fill="#fca5a5" font-size="11">矛盾に気づかない</text>
+
+        <!-- ラベル -->
+        <text x="130" y="155" text-anchor="middle" fill="#f87171" font-size="11">5ch全部見ようとすると毎日60分以上</text>
+        <text x="420" y="120" text-anchor="middle" fill="#8b9aab" font-size="10">⭐ = 波乗りシステムの考案者</text>
+
+        <!-- 解決策 -->
+        <rect x="500" y="28" width="185" height="115" rx="10" fill="#1a2a1a" stroke="#2dd4bf" stroke-width="2"/>
+        <text x="592" y="50" text-anchor="middle" fill="#2dd4bf" font-size="12" font-weight="bold">目指す姿</text>
+        <text x="592" y="68" text-anchor="middle" fill="#e8eef4" font-size="10">毎朝メール1通を読むだけで</text>
+        <text x="592" y="82" text-anchor="middle" fill="#e8eef4" font-size="10">全チャンネルの要点が分かる</text>
+        <text x="592" y="100" text-anchor="middle" fill="#2dd4bf" font-size="11">+ 矛盾があれば警告</text>
+        <text x="592" y="116" text-anchor="middle" fill="#2dd4bf" font-size="11">+ スキャン結果と1セット</text>
+        <text x="592" y="135" text-anchor="middle" fill="#f59e0b" font-size="11">朝 5分で判断完了</text>
+      </svg>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>#</th><th>困りごと</th><th>いつ</th><th>深刻さ</th></tr>
+      </thead>
+      <tbody>
+        <tr class="warn-row">
+          <td style="text-align:center;">1</td>
+          <td>5チャンネルを全部見る時間がない</td>
+          <td>毎朝</td>
+          <td style="color:var(--danger); text-align:center;">★★★ 最重要</td>
+        </tr>
+        <tr class="warn-row">
+          <td style="text-align:center;">2</td>
+          <td>見逃した動画の情報で後日損をする</td>
+          <td>売買後</td>
+          <td style="color:var(--danger); text-align:center;">★★★ 最重要</td>
+        </tr>
+        <tr>
+          <td style="text-align:center;">3</td>
+          <td>チャンネルAとBが逆のことを言っていても気づかない</td>
+          <td>判断時</td>
+          <td style="color:var(--warn); text-align:center;">★★☆</td>
+        </tr>
+        <tr>
+          <td style="text-align:center;">4</td>
+          <td>波乗りルールと違う考え方を無意識に混ぜてしまう</td>
+          <td>エントリー時</td>
+          <td style="color:var(--warn); text-align:center;">★★☆</td>
+        </tr>
+        <tr style="opacity:0.6;">
+          <td style="text-align:center;">5</td>
+          <td>何万通りもある手法からどれを信じるか迷う</td>
+          <td>継続的</td>
+          <td style="text-align:center;">★☆☆</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.8rem; color:var(--muted); margin-top:0.25rem;">※ 5番は波乗りシステムで既に部分解決済み</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       ソリューション
+  ════════════════════════════════════════════ -->
+  <div class="section">
+    <p class="section-label">ソリューション</p>
+    <h2>どう解決するか — 新しい仕組み</h2>
+
+    <div class="note ok">
+      <strong>成功の定義</strong>：メール1通を読むだけで、スキャン結果 + 5チャンネルの最新要約 + 矛盾アラートが確認でき、追加調査ゼロで当日の売買判断に臨める。かつ、どのチャンネルの更新も見落とさない。
+    </div>
+
+    <h3>システム全体のデータフロー</h3>
+
+    <div class="diagram">
+      <svg viewBox="0 0 740 200" xmlns="http://www.w3.org/2000/svg" width="740" height="200">
+        <defs>
+          <marker id="ab" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6 Z" fill="#00b4d8"/>
+          </marker>
+          <marker id="ao" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6 Z" fill="#f97316"/>
+          </marker>
+          <marker id="ag" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6 Z" fill="#2dd4bf"/>
+          </marker>
+        </defs>
+
+        <!-- ── 上ルート（既存） ── -->
+        <!-- Yahoo Finance -->
+        <rect x="8" y="15" width="110" height="55" rx="8" fill="#1a2332" stroke="#00b4d8" stroke-width="2"/>
+        <text x="63" y="36" text-anchor="middle" fill="#e8eef4" font-size="12">Yahoo Finance</text>
+        <text x="63" y="52" text-anchor="middle" fill="#8b9aab" font-size="10">株価・出来高</text>
+        <text x="63" y="64" text-anchor="middle" fill="#00b4d8" font-size="9">データソース</text>
+
+        <line x1="120" y1="42" x2="150" y2="42" stroke="#00b4d8" stroke-width="2" marker-end="url(#ab)"/>
+
+        <!-- 波乗りスキャン -->
+        <rect x="152" y="15" width="120" height="55" rx="8" fill="#1a2332" stroke="#00b4d8" stroke-width="2"/>
+        <text x="212" y="36" text-anchor="middle" fill="#e8eef4" font-size="12">波乗りスキャン</text>
+        <text x="212" y="52" text-anchor="middle" fill="#8b9aab" font-size="10">GC / S / Aランク</text>
+        <text x="212" y="64" text-anchor="middle" fill="#2dd4bf" font-size="9">既存機能</text>
+
+        <!-- ── 下ルート（新規） ── -->
+        <!-- YouTube 5ch -->
+        <rect x="8" y="115" width="110" height="60" rx="8" fill="#1a2332" stroke="#f97316" stroke-width="2"/>
+        <text x="63" y="136" text-anchor="middle" fill="#e8eef4" font-size="12">YouTube</text>
+        <text x="63" y="150" text-anchor="middle" fill="#fca5a5" font-size="10">5チャンネル</text>
+        <text x="63" y="164" text-anchor="middle" fill="#8b9aab" font-size="9">字幕テキスト取得</text>
+        <text x="63" y="172" text-anchor="middle" fill="#f97316" font-size="9">新規追加</text>
+
+        <line x1="120" y1="145" x2="150" y2="145" stroke="#f97316" stroke-width="2" marker-end="url(#ao)"/>
+
+        <!-- Gemini 要約 -->
+        <rect x="152" y="115" width="120" height="60" rx="8" fill="#1a2332" stroke="#f97316" stroke-width="2"/>
+        <text x="212" y="136" text-anchor="middle" fill="#e8eef4" font-size="12">Gemini AI 要約</text>
+        <text x="212" y="152" text-anchor="middle" fill="#8b9aab" font-size="10">3〜5行に圧縮</text>
+        <text x="212" y="166" text-anchor="middle" fill="#fca5a5" font-size="10">矛盾フラグ付与</text>
+        <text x="212" y="172" text-anchor="middle" fill="#f97316" font-size="9">新規追加</text>
+
+        <!-- 上下ルートを統合 -->
+        <path d="M275 42 L320 42 L320 95" stroke="#00b4d8" stroke-width="2" fill="none" marker-end="url(#ab)"/>
+        <path d="M275 145 L320 145 L320 115" stroke="#f97316" stroke-width="2" fill="none" marker-end="url(#ao)"/>
+
+        <!-- 統合ボックス -->
+        <rect x="294" y="95" width="52" height="22" rx="5" fill="#243044" stroke="#8b9aab" stroke-width="1.5"/>
+        <text x="320" y="110" text-anchor="middle" fill="#e8eef4" font-size="10">統合</text>
+        <line x1="349" y1="106" x2="378" y2="106" stroke="#2dd4bf" stroke-width="2" marker-end="url(#ag)"/>
+
+        <!-- メール配信 -->
+        <rect x="380" y="65" width="160" height="85" rx="10" fill="#1a2a1a" stroke="#2dd4bf" stroke-width="2.5"/>
+        <text x="460" y="90" text-anchor="middle" fill="#e8eef4" font-size="13" font-weight="bold">メール配信</text>
+        <text x="460" y="108" text-anchor="middle" fill="#8b9aab" font-size="10">スキャン結果 CSV</text>
+        <text x="460" y="122" text-anchor="middle" fill="#f97316" font-size="10">YouTube 5ch 要約</text>
+        <text x="460" y="136" text-anchor="middle" fill="#f59e0b" font-size="10">矛盾アラート</text>
+        <text x="460" y="146" text-anchor="middle" fill="#2dd4bf" font-size="9">毎朝1通 / Resend</text>
+
+        <!-- 時計アイコン的なもの -->
+        <rect x="568" y="85" width="160" height="50" rx="8" fill="#1e2a3a" stroke="#2d3a4d" stroke-width="1"/>
+        <text x="648" y="103" text-anchor="middle" fill="#2dd4bf" font-size="11" font-weight="bold">毎朝 07:30 JST</text>
+        <text x="648" y="118" text-anchor="middle" fill="#8b9aab" font-size="10">GitHub Actions 自動実行</text>
+        <text x="648" y="130" text-anchor="middle" fill="#8b9aab" font-size="10">（平日のみ）</text>
+
+        <!-- 凡例 -->
+        <rect x="570" y="20" width="12" height="12" rx="2" fill="none" stroke="#00b4d8" stroke-width="2"/>
+        <text x="588" y="31" fill="#8b9aab" font-size="10">既存機能</text>
+        <rect x="570" y="40" width="12" height="12" rx="2" fill="none" stroke="#f97316" stroke-width="2"/>
+        <text x="588" y="51" fill="#8b9aab" font-size="10">今回新規追加</text>
+        <rect x="570" y="60" width="12" height="12" rx="2" fill="none" stroke="#2dd4bf" stroke-width="2"/>
+        <text x="588" y="71" fill="#8b9aab" font-size="10">拡張</text>
+      </svg>
+    </div>
+
+    <h3>矛盾アラートの仕組み</h3>
+    <p class="lead">「波乗りシステムのルール」をAIに覚えさせ、各チャンネルの主張が食い違う場合に警告を出します。</p>
+
+    <div class="card card-orange">
+      <p style="font-size:0.88rem; margin-bottom:0.75rem; color:var(--muted);">アラートの例（メール内のイメージ）</p>
+      <div class="alert-sample">
+        <span class="alert-badge">矛盾</span>
+        <strong style="color:#fca5a5;">CLEARTRADEチャンネル</strong> —「押し目は10%以上待て」
+        <br>
+        <span style="color:#8b9aab; font-size:0.82rem;">波乗りルールは押し目 1.0〜1.5×ATR（約3〜5%相当）のため、深すぎる待機は波乗り戦略と合わない可能性があります。</span>
+      </div>
+      <div class="alert-sample" style="background:#1a2a1a; border-color:#1e5c3a;">
+        <span style="background:#1e5c3a; color:#6ee7b7; border-radius:4px; padding:0.1rem 0.4rem; font-size:0.78rem; font-weight:700; margin-right:0.4rem;">一致</span>
+        <strong style="color:#6ee7b7;">波乗りチャート向川チャンネル</strong> —「MA5が20日線上で維持されていることが条件」
+        <br>
+        <span style="color:#8b9aab; font-size:0.82rem;">波乗りルールのトレンドフィルター T1・T2 と合致しています。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       ビフォー/アフター
+  ════════════════════════════════════════════ -->
+  <div class="section">
+    <p class="section-label">効果</p>
+    <h2>導入前 / 導入後</h2>
+
+    <div class="ba-wrap">
+      <div class="ba-card ba-before">
+        <div class="ba-label">Before — 現状</div>
+        <div class="ba-item">朝の情報収集に60分以上かかる</div>
+        <div class="ba-item">5chを全部見られた日はほぼない</div>
+        <div class="ba-item">チャンネル間の矛盾に気づけない</div>
+        <div class="ba-item">見落としが直接コストになる</div>
+        <div class="ba-item">判断根拠が「うろ覚え」になる</div>
+      </div>
+      <div class="ba-card ba-after">
+        <div class="ba-label">After — 目指す姿</div>
+        <div class="ba-item">メール確認だけで5分で完了</div>
+        <div class="ba-item">全チャンネルの更新を100%キャッチ</div>
+        <div class="ba-item">矛盾は警告マーク付きで即通知</div>
+        <div class="ba-item">見落としゼロ</div>
+        <div class="ba-item">判断根拠が当日の要約として記録に残る</div>
+      </div>
+    </div>
+
+    <!-- 時間削減グラフ -->
+    <h3>朝の情報収集時間の変化（イメージ）</h3>
+    <div class="diagram">
+      <svg viewBox="0 0 520 130" xmlns="http://www.w3.org/2000/svg" width="520" height="130">
+        <!-- 軸 -->
+        <line x1="80" y1="110" x2="480" y2="110" stroke="#2d3a4d" stroke-width="1.5"/>
+        <line x1="80" y1="15"  x2="80"  y2="110" stroke="#2d3a4d" stroke-width="1.5"/>
+
+        <!-- Y目盛り -->
+        <line x1="77" y1="110" x2="80" y2="110" stroke="#2d3a4d" stroke-width="1.5"/>
+        <text x="74" y="113" text-anchor="end" fill="#8b9aab" font-size="10">0分</text>
+        <line x1="77" y1="78"  x2="80" y2="78"  stroke="#2d3a4d" stroke-width="1.5"/>
+        <text x="74" y="81"  text-anchor="end" fill="#8b9aab" font-size="10">20分</text>
+        <line x1="77" y1="46"  x2="80" y2="46"  stroke="#2d3a4d" stroke-width="1.5"/>
+        <text x="74" y="49"  text-anchor="end" fill="#8b9aab" font-size="10">40分</text>
+        <line x1="77" y1="15"  x2="80" y2="15"  stroke="#2d3a4d" stroke-width="1.5"/>
+        <text x="74" y="18"  text-anchor="end" fill="#8b9aab" font-size="10">60分</text>
+
+        <!-- Before バー（60分） -->
+        <rect x="130" y="15" width="80" height="95" rx="5" fill="#7f2020" opacity="0.85"/>
+        <text x="170" y="100" text-anchor="middle" fill="#fca5a5" font-size="12" font-weight="700">60分</text>
+        <text x="170" y="122" text-anchor="middle" fill="#fca5a5" font-size="10">導入前</text>
+
+        <!-- After バー（5分） -->
+        <rect x="310" y="102" width="80" height="8" rx="3" fill="#2dd4bf" opacity="0.85"/>
+        <text x="350" y="98"  text-anchor="middle" fill="#2dd4bf" font-size="12" font-weight="700">5分</text>
+        <text x="350" y="122" text-anchor="middle" fill="#2dd4bf" font-size="10">導入後（目標）</text>
+
+        <!-- 削減ラベル -->
+        <line x1="215" y1="62" x2="305" y2="62" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="260" y="55" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="700">約55分削減</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       監視チャンネル一覧
+  ════════════════════════════════════════════ -->
+  <div class="section">
+    <p class="section-label">データソース</p>
+    <h2>監視する5つのYouTubeチャンネル</h2>
+
+    <ul class="channel-list">
+      <li>
+        <div class="ch-icon base">創</div>
+        <div>
+          <div>波乗りチャート向川</div>
+          <div class="ch-meta">波乗りシステム考案者 / 基準ルールの出典 / 矛盾判定の基準チャンネル</div>
+        </div>
+      </li>
+      <li>
+        <div class="ch-icon">1</div>
+        <div>
+          <div>1up投資</div>
+          <div class="ch-meta">参考チャンネル / Gemini が波乗りルールと照合して要約</div>
+        </div>
+      </li>
+      <li>
+        <div class="ch-icon">CL</div>
+        <div>
+          <div>CLEARTRADE</div>
+          <div class="ch-meta">参考チャンネル / cleartrade 手法との整合性もチェック</div>
+        </div>
+      </li>
+      <li>
+        <div class="ch-icon">TL</div>
+        <div>
+          <div>トレードラボ</div>
+          <div class="ch-meta">参考チャンネル</div>
+        </div>
+      </li>
+      <li>
+        <div class="ch-icon">GS</div>
+        <div>
+          <div>お茶のゴールドマン</div>
+          <div class="ch-meta">参考チャンネル</div>
+        </div>
+      </li>
+    </ul>
+
+    <p class="note">
+      更新があった日は要約 + 矛盾チェック付きで届き、更新がなかった日は「本日更新なし」と表示します。新たにチャンネルを追加したい場合は設定ファイルに1行書くだけです。
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       メールサンプル
+  ════════════════════════════════════════════ -->
+  <div class="section">
+    <p class="section-label">アウトプット</p>
+    <h2>届くメールのイメージ</h2>
+
+    <div class="mail-mock">
+      <div class="mail-header">
+        <div class="mail-subject">[波乗りスキャナー] 05/15 シグナル 12件 (GC:3 / S:5 / A:4)</div>
+        <div>差出人: Nami Scanner &lt;onboarding@resend.dev&gt; &nbsp;|&nbsp; 毎朝 07:30 JST 自動送信</div>
+      </div>
+      <div class="mail-body">
+        <div class="mail-section">
+          <div class="mail-section-title">本日のシグナル集計（既存機能）</div>
+          <table style="font-size:0.82rem; margin:0;">
+            <thead><tr><th>市場</th><th>GC本日</th><th>RANK S</th><th>RANK A</th></tr></thead>
+            <tbody>
+              <tr><td>JPX400</td><td style="text-align:center;">2件</td><td style="text-align:center;">3件</td><td style="text-align:center;">2件</td></tr>
+              <tr><td>SP500</td><td style="text-align:center;">1件</td><td style="text-align:center;">2件</td><td style="text-align:center;">2件</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mail-section" style="border-top:1px solid #e2e8f0; padding-top:0.75rem;">
+          <div class="mail-section-title" style="color:#f97316;">YouTube チャンネル最新情報（過去24時間）— 新規追加</div>
+          <div class="mail-row">
+            <span class="mail-ch">⭐ 波乗りチャート向川</span>
+            <span class="mail-summary">【動画タイトル例】MA5が20日線を割り込んだ時の対処法について解説。波乗りルールとの整合性あり、特に押し目判断のATR活用を再確認。</span>
+          </div>
+          <div class="mail-row">
+            <span class="mail-ch">CLEARTRADE</span>
+            <span class="mail-summary">【動画タイトル例】今週の相場展望。10%以上の深い押し目を推奨する場面あり。</span>
+            <span class="mail-warn-badge">矛盾</span>
+          </div>
+          <div class="mail-row" style="color:#aaa;">
+            <span class="mail-ch">1up投資</span>
+            <span class="mail-summary" style="color:#aaa;">本日更新なし</span>
+          </div>
+          <div class="mail-row">
+            <span class="mail-ch">トレードラボ</span>
+            <span class="mail-summary">【動画タイトル例】ゴールデンクロス発生後のエントリータイミング解説。出来高再拡大の重要性に言及。波乗りルールと一致。</span>
+          </div>
+          <div class="mail-row" style="color:#aaa;">
+            <span class="mail-ch">お茶のゴールドマン</span>
+            <span class="mail-summary" style="color:#aaa;">本日更新なし</span>
+          </div>
+        </div>
+        <p style="font-size:0.78rem; color:#999; margin-top:0.75rem;">添付: jpx400_signals_2026-05-15.csv / sp500_signals_2026-05-15.csv</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       追加セットアップ
+  ════════════════════════════════════════════ -->
+  <div class="section">
+    <p class="section-label">実装</p>
+    <h2>追加で必要なセットアップ</h2>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>新しく必要なもの</h3>
+        <table style="font-size:0.85rem;">
+          <thead><tr><th>キー名</th><th>取得場所</th><th>料金</th></tr></thead>
+          <tbody>
+            <tr><td><code>YOUTUBE_API_KEY</code></td><td>Google Cloud Console</td><td style="color:var(--ok);">無料枠</td></tr>
+            <tr><td><code>GEMINI_API_KEY</code></td><td>Google AI Studio</td><td style="color:var(--ok);">無料枠</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>既存（変更なし）</h3>
+        <table style="font-size:0.85rem; opacity:0.65;">
+          <thead><tr><th>キー名</th><th>用途</th></tr></thead>
+          <tbody>
+            <tr><td><code>RESEND_API_KEY</code></td><td>メール配信</td></tr>
+            <tr><td><code>NOTIFY_EMAIL</code></td><td>配信先アドレス</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-step exist">GitHub Secrets に<br>2つ追加</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step new">fetch_youtube_summary.py<br>（新規スクリプト）</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step exist">send_mail.py<br>（メール本文に自動追記）</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step exist">scan.yml<br>（GitHub Actions 更新済み）</div>
+    </div>
+  </div>
+
+  <footer>
+    AI-Driven School 第5回課題 提出ページ｜波乗りスキャナー × YouTube連動設計<br>
+    リポジトリ: nami-scanner（ローカル開発）
+  </footer>
+
+</div>
+</body>
+</html>

@@ -299,6 +299,24 @@ def fetch_ohlcv(ticker, period, interval):
         print(f"  ⚠ {ticker}: {e}")
         return None, None
 
+
+def fetch_ohlcv_df(ticker, period, interval):
+    """日足OHLCVをDataFrameで取得（cleartrade連携用）"""
+    try:
+        t = yf.Ticker(ticker)
+        df = t.history(period=period, interval=interval, auto_adjust=True)
+        if df.empty or len(df) < 60:
+            return None
+        df = df.copy()
+        df.index = pd.to_datetime(df.index).tz_localize(None)
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = [c[0] for c in df.columns]
+        df = df.rename(columns=str.lower)
+        return df[["open", "high", "low", "close", "volume"]].copy()
+    except Exception as e:
+        print(f"  ⚠ {ticker}: {e}")
+        return None
+
 def check_market_regime(index_code="^N225"):
     """市場全体のトレンドを確認（MA20 vs MA50）"""
     try:
@@ -330,11 +348,26 @@ def scan_all(timeframe, weekly_lookup: dict | None = None, market_regime: dict |
 
     results = []
     total = len(TICKERS)
+    topix_scan = None
+    if timeframe == "1d":
+        for tsym in ("^TOPX", "1306.T"):
+            tdf = fetch_ohlcv_df(tsym, cfg["period"], cfg["interval"])
+            if tdf is not None and len(tdf) >= 60:
+                topix_scan = tdf[["close"]].copy()
+                break
+
     for i, (code, name) in enumerate(TICKERS):
         print(f"  [{i+1:3}/{total}] {code} {name}", end=" ")
 
+        ohlc_df = None
         if timeframe == "1d":
-            closes, volumes = fetch_ohlcv(code, cfg["period"], cfg["interval"])
+            ohlc_df = fetch_ohlcv_df(code, cfg["period"], cfg["interval"])
+            if ohlc_df is None:
+                print("SKIP")
+                time.sleep(0.3)
+                continue
+            closes = ohlc_df["close"].dropna().tolist()
+            volumes = ohlc_df["volume"].tolist()
         else:
             closes = fetch_closes(code, cfg["period"], cfg["interval"])
             volumes = None
@@ -369,6 +402,34 @@ def scan_all(timeframe, weekly_lookup: dict | None = None, market_regime: dict |
                 )
                 market_caution = True
             sig["market_caution"] = market_caution
+
+            if timeframe == "1d" and topix_scan is not None and ohlc_df is not None:
+                try:
+                    from trade_rules.scanner_cleartrade import (
+                        enrich_scan_result,
+                        eligible_for_trading,
+                    )
+                    aligned_idx = ohlc_df.index.intersection(topix_scan.index)
+                    sub = ohlc_df.loc[aligned_idx]
+                    ts = topix_scan.reindex(sub.index).ffill()
+                    extra = enrich_scan_result(sub, ts, ticker=code)
+                    sig["trade_rules_candidate"] = extra["trade_rules_candidate"]
+                    sig["cleartrade_bonus"] = extra["cleartrade_bonus"]
+                    sig["cleartrade_flags"] = extra["cleartrade_flags"]
+                    sig["wave_v2_screen_pass"] = extra.get("wave_v2_screen_pass")
+                    sig["wave_v2_entry_pattern"] = extra.get("wave_v2_entry_pattern")
+                    sig["wave_v2_limit_price"] = extra.get("wave_v2_limit_price")
+                    sig["score"] += int(extra.get("cleartrade_bonus", 0))
+                    sig["rank"] = (
+                        "S" if sig["score"] >= 80 else
+                        "A" if sig["score"] >= 60 else
+                        "B" if sig["score"] >= 40 else "C"
+                    )
+                    sig["eligible_trade_book"] = eligible_for_trading(
+                        sig["rank"], extra["trade_rules_candidate"]
+                    )
+                except Exception as ex:
+                    sig["cleartrade_error"] = str(ex)
 
             results.append({"code": code, "name": name, **sig})
             flags = ("W✓" if weekly_aligned else "") + (" V✓" if sig.get("vol_confirmed") else "") + (" ⚠市場" if market_caution else "")

@@ -1,0 +1,7 @@
+※ 本ファイルは旧版です。現行は次を参照してください:
+
+  trade_rules/波乗りトレード スクリーニング条件定義書 v2.0.txt
+  trade_rules/system_spec.md
+
+実装の既定: StrategyConfig(strategy_rules="v2")
+レガシー cleartrade: --legacy-cleartrade

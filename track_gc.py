@@ -88,7 +88,7 @@ def add_new_gcs(rows: list[dict], today_str: str):
                 "d20_price":"", "d20_pct": "",
             })
             existing.add(key)
-            print(f"  + 追加: [{market}] {r['code']} {r['name']}  ¥{r['close']}")
+            print(f"  + 追加: [{market}] {r['code']} {r['name']}  close={r['close']}")
 
 
 def update_prices(rows: list[dict], today: datetime.date):

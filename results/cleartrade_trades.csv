@@ -1,0 +1,2 @@
+﻿code,entry_date,exit_date,entry_price,exit_price,shares,exit_reason,pnl,pnl_pct,holding_days,trade_group,assumed_slippage_pct
+7203.T,2026-01-23,2026-01-29,3585.2510944630867,3316.2525527369244,1115,stop_loss_pct,-303780.962307985,-7.502920566472804,3,7203.T:2026-01-23,0.1

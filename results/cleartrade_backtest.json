@@ -1,0 +1,27 @@
+{
+  "metrics": {
+    "total_return_pct": -0.29993337402466347,
+    "annual_return_pct": -0.06023187177900402,
+    "max_drawdown_pct": 0.2999333740246594,
+    "sharpe_ratio": -0.7065016025827459,
+    "trade_count": 1,
+    "win_rate_pct": 0.0,
+    "avg_win": 0.0,
+    "avg_loss": 303780.962307985,
+    "avg_win_pct": 0.0,
+    "avg_loss_pct": 7.502920566472804,
+    "risk_reward": NaN,
+    "profit_factor": 0.0,
+    "final_capital": 99700066.62597534,
+    "avg_holding_days": 3.0,
+    "max_consecutive_losses": 1,
+    "avg_assumed_slippage_pct": 0.1
+  },
+  "n_trades_detail": 1,
+  "tickers": [
+    "7203.T"
+  ],
+  "period": "5y",
+  "entry_mode": "next_open",
+  "compare": null
+}

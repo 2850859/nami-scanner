@@ -18,7 +18,7 @@ jobs:
           python-version: '3.12'
 
       - name: ライブラリ インストール
-        run: pip install yfinance pandas pyarrow requests playwright
+        run: pip install yfinance pandas pyarrow requests playwright google-api-python-client youtube-transcript-api google-generativeai
 
       - name: Playwright ブラウザ インストール
         run: playwright install chromium --with-deps
@@ -46,8 +46,10 @@ jobs:
           git diff --staged --quiet || git commit -m "scan: $(date '+%Y-%m-%d %H:%M') JST"
           git push
 
-      - name: メール送信（CSV・スクリーンショット添付）
+      - name: メール送信（CSV・スクリーンショット添付・YouTube要約）
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python send_mail.py

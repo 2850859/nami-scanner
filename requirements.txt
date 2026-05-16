@@ -1,0 +1,12 @@
+# 本番スキャン・メール配信に必要なライブラリ
+# GitHub Actions の scan.yml でも同内容をインストールしている
+yfinance
+pandas
+pyarrow
+requests
+playwright
+
+# YouTube チャンネル要約機能（fetch_youtube_summary.py）
+google-api-python-client
+youtube-transcript-api
+google-generativeai

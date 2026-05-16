@@ -1,0 +1,18 @@
+{
+  "note": "JPX400 日足1銘柄分の出力イメージ（trade_rules 連携フィールド付き）",
+  "code": "7203.T",
+  "name": "トヨタ自動車",
+  "rank": "A",
+  "score": 72,
+  "gc_today": false,
+  "trade_rules_candidate": false,
+  "cleartrade_bonus": 26,
+  "cleartrade_flags": {
+    "above_sma20": true,
+    "topix_above_sma20": true,
+    "volume_contracted": true
+  },
+  "eligible_trade_book": false,
+  "weekly_aligned": true,
+  "market_caution": false
+}

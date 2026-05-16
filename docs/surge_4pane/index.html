@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>波乗りスキャナー｜課題管理ダッシュボード</title>
+  <style>
+    :root {
+      --p1: 180px;
+      --p2: 240px;
+      --p4: 260px;
+      --accent: #2563eb;
+      --accent-bg: #eff6ff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --ok: #16a34a;
+      --ok-bg: #f0fdf4;
+      --warn: #d97706;
+      --warn-bg: #fffbeb;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --orange: #ea580c;
+      --orange-bg: #fff7ed;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* ═══════════════════ APP SHELL ═══════════════════ */
+    .app { display: flex; flex-direction: column; height: 100vh; }
+
+    .topbar {
+      height: 44px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      gap: 0.5rem;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+    .topbar-logo {
+      width: 26px; height: 26px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 0.7rem; font-weight: 800;
+    }
+    .topbar-title { font-weight: 700; font-size: 0.85rem; }
+    .topbar-sep { color: var(--border); }
+    .topbar-breadcrumb { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 0.35rem; }
+    .topbar-breadcrumb span { cursor: pointer; }
+    .topbar-breadcrumb span:hover { color: var(--accent); }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+    .badge-pill {
+      background: var(--ok-bg);
+      color: var(--ok);
+      border: 1px solid #86efac;
+      border-radius: 20px;
+      padding: 0.1rem 0.6rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    /* ═══════════════════ 4 PANE LAYOUT ═══════════════════ */
+    .panes { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Pane 1: カテゴリ ── */
+    .pane1 {
+      width: var(--p1);
+      min-width: var(--p1);
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .pane1-header {
+      padding: 0.75rem 0.85rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cat-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.85rem;
+      cursor: pointer;
+      border-radius: 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+      transition: background 0.1s;
+    }
+    .cat-item:hover { background: var(--bg); color: var(--text); }
+    .cat-item.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+      font-weight: 600;
+      border-right: 2px solid var(--accent);
+    }
+    .cat-count {
+      font-size: 0.72rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.05rem 0.4rem;
+      color: var(--muted);
+    }
+    .cat-item.active .cat-count {
+      background: var(--accent-bg);
+      border-color: #bfdbfe;
+      color: var(--accent);
+    }
+    .cat-group-label {
+      padding: 0.6rem 0.85rem 0.25rem;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #94a3b8;
+    }
+
+    /* ── Pane 2: リスト ── */
+    .pane2 {
+      width: var(--p2);
+      min-width: var(--p2);
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .pane2-header {
+      padding: 0.65rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+      font-size: 0.82rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .pane2-count { font-size: 0.72rem; color: var(--muted); font-weight: 400; }
+    .list-group { padding: 0.5rem 0; }
+    .list-group-label {
+      padding: 0.3rem 0.9rem 0.15rem;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #94a3b8;
+    }
+    .list-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.55rem 0.9rem;
+      cursor: pointer;
+      background: var(--card);
+      border: 1px solid transparent;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .list-item:hover { background: #f1f5f9; }
+    .list-item.active {
+      background: var(--accent-bg);
+      border-left: 2px solid var(--accent);
+    }
+    .list-avatar {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .list-avatar.danger { background: var(--danger-bg); border-color: #fca5a5; color: var(--danger); }
+    .list-avatar.warn   { background: var(--warn-bg); border-color: #fde68a; color: var(--warn); }
+    .list-avatar.ok     { background: var(--ok-bg); border-color: #86efac; color: var(--ok); }
+    .list-avatar.orange { background: var(--orange-bg); border-color: #fed7aa; color: var(--orange); }
+    .list-item-body { flex: 1; min-width: 0; }
+    .list-item-name { font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .list-item-sub  { font-size: 0.72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .list-item-badge {
+      font-size: 0.68rem;
+      padding: 0.05rem 0.35rem;
+      border-radius: 3px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .badge-danger { background: var(--danger-bg); color: var(--danger); }
+    .badge-warn   { background: var(--warn-bg); color: var(--warn); }
+    .badge-ok     { background: var(--ok-bg); color: var(--ok); }
+    .badge-blue   { background: var(--accent-bg); color: var(--accent); }
+    .badge-orange { background: var(--orange-bg); color: var(--orange); }
+    .badge-gray   { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+    /* ── Pane 3: ダッシュボード ── */
+    .pane3 {
+      flex: 1;
+      min-width: 0;
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .pane3-header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.25rem;
+      flex-shrink: 0;
+    }
+    .pane3-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .pane3-meta  { font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 0.5rem; }
+    .pane3-body  { padding: 1.25rem; }
+
+    .section-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      margin: 0.75rem 0;
+    }
+    .section-card h3 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.6rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* 選考フロー風 */
+    .flow-steps { display: flex; flex-direction: column; gap: 0; }
+    .flow-step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .flow-step-item:last-child { border-bottom: none; }
+    .flow-step-item.active { background: var(--accent-bg); margin: 0 -1.1rem; padding: 0.6rem 1.1rem; border-bottom: 1px solid #bfdbfe; }
+    .flow-step-circle {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--card);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .flow-step-circle.done  { background: var(--ok); border-color: var(--ok); color: white; }
+    .flow-step-circle.active-c { background: var(--accent); border-color: var(--accent); color: white; }
+    .flow-step-circle.todo  { background: var(--bg); }
+    .flow-step-info { flex: 1; min-width: 0; }
+    .flow-step-name { font-size: 0.82rem; font-weight: 600; }
+    .flow-step-desc { font-size: 0.75rem; color: var(--muted); }
+    .flow-step-date { font-size: 0.72rem; color: var(--muted); flex-shrink: 0; }
+
+    /* SVG図解エリア */
+    .diagram {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+      margin: 0.75rem 0;
+      overflow-x: auto;
+    }
+    .diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+    /* テーブル */
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 0.5rem 0; }
+    th, td { border: 1px solid var(--border); padding: 0.45rem 0.6rem; text-align: left; vertical-align: top; }
+    th { background: #f1f5f9; font-weight: 600; font-size: 0.78rem; }
+
+    /* Before/After */
+    .ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin: 0.5rem 0; }
+    .ba-side { border-radius: 6px; padding: 0.75rem; }
+    .ba-before { background: var(--danger-bg); border: 1px solid #fca5a5; }
+    .ba-after  { background: var(--ok-bg); border: 1px solid #86efac; }
+    .ba-label  { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.4rem; }
+    .ba-before .ba-label { color: var(--danger); }
+    .ba-after  .ba-label { color: var(--ok); }
+    .ba-item { font-size: 0.78rem; padding: 0.15rem 0 0.15rem 0.8rem; position: relative; }
+    .ba-item::before { content: "•"; position: absolute; left: 0.1rem; }
+    .ba-before .ba-item::before { color: var(--danger); }
+    .ba-after  .ba-item::before { color: var(--ok); }
+
+    /* ── Pane 4: 詳細パネル ── */
+    .pane4 {
+      width: var(--p4);
+      min-width: var(--p4);
+      background: var(--card);
+      border-left: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .pane4-header {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.82rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .pane4-body { padding: 0.85rem 1rem; }
+    .field-group { margin-bottom: 1rem; }
+    .field-group-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    .field-row { display: flex; flex-direction: column; margin-bottom: 0.55rem; }
+    .field-label { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.2rem; }
+    .field-value { font-size: 0.82rem; font-weight: 500; }
+    .field-select {
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 0.3rem 0.5rem;
+      font-size: 0.8rem;
+      background: var(--bg);
+      color: var(--text);
+      width: 100%;
+    }
+
+    .stars { color: #f59e0b; letter-spacing: 0.05em; font-size: 0.85rem; }
+    .stars .empty { color: #e2e8f0; }
+
+    .rating-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.78rem;
+    }
+    .rating-row:last-child { border-bottom: none; }
+    .rating-label { color: var(--muted); }
+
+    .comment-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 0.5rem 0.65rem;
+      font-size: 0.78rem;
+      color: var(--text);
+      line-height: 1.55;
+      margin-top: 0.3rem;
+    }
+
+    .divider { height: 1px; background: var(--border); margin: 0.85rem 0; }
+
+    /* hidden / visible */
+    .pane-section { display: none; }
+    .pane-section.visible { display: block; }
+
+    /* メールモック */
+    .mail-mock { border: 1px solid var(--border); border-radius: 7px; overflow: hidden; margin: 0.5rem 0; }
+    .mail-top { background: #f8fafc; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.75rem; }
+    .mail-subj { font-weight: 700; color: var(--text); font-size: 0.8rem; margin-bottom: 0.1rem; }
+    .mail-body-inner { padding: 0.75rem; font-size: 0.75rem; background: var(--card); }
+    .mail-sec-t { font-size: 0.7rem; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 0.2rem; margin: 0.5rem 0 0.35rem; }
+    .mail-sec-t.orange { color: var(--orange); border-color: #fed7aa; }
+    .mail-row-m { display: flex; gap: 0.4rem; padding: 0.2rem 0; border-bottom: 1px solid #f1f5f9; }
+    .mail-ch-m { min-width: 100px; flex-shrink: 0; color: var(--muted); }
+    .mail-sum-m { flex: 1; color: var(--text); }
+    .mail-bw { background: var(--danger-bg); color: var(--danger); border-radius: 3px; padding: 0.02rem 0.3rem; font-size: 0.65rem; font-weight: 700; flex-shrink: 0; white-space: nowrap; }
+    .mail-bo { background: var(--ok-bg); color: var(--ok); border-radius: 3px; padding: 0.02rem 0.3rem; font-size: 0.65rem; font-weight: 700; flex-shrink: 0; white-space: nowrap; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ トップバー ═══ -->
+  <div class="topbar">
+    <div class="topbar-logo">波</div>
+    <span class="topbar-title">波乗りスキャナー</span>
+    <span class="topbar-sep">›</span>
+    <div class="topbar-breadcrumb">
+      <span id="bc1" onclick="selectCat('pain')">課題管理</span>
+      <span class="topbar-sep">›</span>
+      <span id="bc2">ペイン構成</span>
+      <span class="topbar-sep">›</span>
+      <span id="bc3">複数チャンネルを全部見る時間がない</span>
+    </div>
+    <div class="topbar-right">
+      <span class="badge-pill">第5回課題 提出済み</span>
+    </div>
+  </div>
+
+  <!-- ═══ 4ペイン ═══ -->
+  <div class="panes">
+
+    <!-- ════ PANE 1: カテゴリ ════ -->
+    <div class="pane1">
+      <div class="pane1-header">
+        <span>セクション</span>
+      </div>
+
+      <div class="cat-group-label">課題整理</div>
+      <div class="cat-item active" id="cat-pain" onclick="selectCat('pain')">
+        ペイン構成 <span class="cat-count">5</span>
+      </div>
+
+      <div class="cat-group-label">解決策</div>
+      <div class="cat-item" id="cat-solution" onclick="selectCat('solution')">
+        ソリューション設計 <span class="cat-count">3</span>
+      </div>
+
+      <div class="cat-group-label">データソース</div>
+      <div class="cat-item" id="cat-channel" onclick="selectCat('channel')">
+        チャンネル管理 <span class="cat-count">5</span>
+      </div>
+
+      <div class="cat-group-label">アウトプット</div>
+      <div class="cat-item" id="cat-email" onclick="selectCat('email')">
+        メールプレビュー <span class="cat-count">2</span>
+      </div>
+
+      <div class="cat-group-label">実装</div>
+      <div class="cat-item" id="cat-impl" onclick="selectCat('impl')">
+        実装状況 <span class="cat-count">4</span>
+      </div>
+    </div>
+
+    <!-- ════ PANE 2: リスト ════ -->
+    <div class="pane2">
+
+      <!-- ペイン構成リスト -->
+      <div id="list-pain">
+        <div class="pane2-header">
+          ペイン構成 <span class="pane2-count">5件</span>
+        </div>
+        <div class="list-group">
+          <div class="list-group-label">最重要 ★★★</div>
+          <div class="list-item active" id="li-p1" onclick="selectItem('pain','p1')">
+            <div class="list-avatar danger">P1</div>
+            <div class="list-item-body">
+              <div class="list-item-name">複数チャンネルを全部見る時間がない</div>
+              <div class="list-item-sub">毎朝 · 未解決</div>
+            </div>
+            <span class="list-item-badge badge-danger">★★★</span>
+          </div>
+          <div class="list-item" id="li-p2" onclick="selectItem('pain','p2')">
+            <div class="list-avatar danger">P2</div>
+            <div class="list-item-body">
+              <div class="list-item-name">見逃した情報で後日損をする</div>
+              <div class="list-item-sub">売買後 · 未解決</div>
+            </div>
+            <span class="list-item-badge badge-danger">★★★</span>
+          </div>
+          <div class="list-group-label">重要 ★★☆</div>
+          <div class="list-item" id="li-p3" onclick="selectItem('pain','p3')">
+            <div class="list-avatar warn">P3</div>
+            <div class="list-item-body">
+              <div class="list-item-name">チャンネル間の矛盾に気づかない</div>
+              <div class="list-item-sub">判断時 · 未解決</div>
+            </div>
+            <span class="list-item-badge badge-warn">★★☆</span>
+          </div>
+          <div class="list-item" id="li-p4" onclick="selectItem('pain','p4')">
+            <div class="list-avatar warn">P4</div>
+            <div class="list-item-body">
+              <div class="list-item-name">波乗りルールと違う手法を混ぜてしまう</div>
+              <div class="list-item-sub">エントリー時 · 未解決</div>
+            </div>
+            <span class="list-item-badge badge-warn">★★☆</span>
+          </div>
+          <div class="list-group-label">低 ★☆☆</div>
+          <div class="list-item" id="li-p5" onclick="selectItem('pain','p5')">
+            <div class="list-avatar ok">P5</div>
+            <div class="list-item-body">
+              <div class="list-item-name">何万通りの手法から選べない</div>
+              <div class="list-item-sub">継続的 · 部分解決済み</div>
+            </div>
+            <span class="list-item-badge badge-ok">解決済</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ソリューションリスト -->
+      <div id="list-solution" style="display:none;">
+        <div class="pane2-header">ソリューション設計 <span class="pane2-count">3ステップ</span></div>
+        <div class="list-group">
+          <div class="list-group-label">新規追加</div>
+          <div class="list-item active" id="li-s1" onclick="selectItem('solution','s1')">
+            <div class="list-avatar orange">S1</div>
+            <div class="list-item-body">
+              <div class="list-item-name">YouTube 字幕取得</div>
+              <div class="list-item-sub">5チャンネル · 実装済み</div>
+            </div>
+            <span class="list-item-badge badge-orange">新規</span>
+          </div>
+          <div class="list-item" id="li-s2" onclick="selectItem('solution','s2')">
+            <div class="list-avatar orange">S2</div>
+            <div class="list-item-body">
+              <div class="list-item-name">Gemini AI 要約 + 矛盾フラグ</div>
+              <div class="list-item-sub">Gemini 2.0 Flash · 実装済み</div>
+            </div>
+            <span class="list-item-badge badge-orange">新規</span>
+          </div>
+          <div class="list-group-label">既存を拡張</div>
+          <div class="list-item" id="li-s3" onclick="selectItem('solution','s3')">
+            <div class="list-avatar" style="background:var(--accent-bg);border-color:#bfdbfe;color:var(--accent);">S3</div>
+            <div class="list-item-body">
+              <div class="list-item-name">メール統合配信</div>
+              <div class="list-item-sub">スキャン結果 + YouTube 要約を1通に</div>
+            </div>
+            <span class="list-item-badge badge-blue">拡張</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- チャンネルリスト -->
+      <div id="list-channel" style="display:none;">
+        <div class="pane2-header">チャンネル管理 <span class="pane2-count">5チャンネル</span></div>
+        <div class="list-group">
+          <div class="list-group-label">基準チャンネル</div>
+          <div class="list-item active" id="li-c1" onclick="selectItem('channel','c1')">
+            <div class="list-avatar ok">創</div>
+            <div class="list-item-body">
+              <div class="list-item-name">波乗りチャート向川</div>
+              <div class="list-item-sub">矛盾判定の基準 · 考案者</div>
+            </div>
+            <span class="list-item-badge badge-ok">基準</span>
+          </div>
+          <div class="list-group-label">参考チャンネル</div>
+          <div class="list-item" id="li-c2" onclick="selectItem('channel','c2')">
+            <div class="list-avatar">1</div>
+            <div class="list-item-body">
+              <div class="list-item-name">1up投資</div>
+              <div class="list-item-sub">参考チャンネル</div>
+            </div>
+          </div>
+          <div class="list-item" id="li-c3" onclick="selectItem('channel','c3')">
+            <div class="list-avatar orange">CL</div>
+            <div class="list-item-body">
+              <div class="list-item-name">CLEARTRADE</div>
+              <div class="list-item-sub">矛盾アラート実績あり</div>
+            </div>
+            <span class="list-item-badge badge-orange">要注意</span>
+          </div>
+          <div class="list-item" id="li-c4" onclick="selectItem('channel','c4')">
+            <div class="list-avatar">TL</div>
+            <div class="list-item-body">
+              <div class="list-item-name">トレードラボ</div>
+              <div class="list-item-sub">参考チャンネル</div>
+            </div>
+          </div>
+          <div class="list-item" id="li-c5" onclick="selectItem('channel','c5')">
+            <div class="list-avatar">GS</div>
+            <div class="list-item-body">
+              <div class="list-item-name">お茶のゴールドマン</div>
+              <div class="list-item-sub">参考チャンネル</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- メールリスト -->
+      <div id="list-email" style="display:none;">
+        <div class="pane2-header">メールプレビュー <span class="pane2-count">2セクション</span></div>
+        <div class="list-group">
+          <div class="list-group-label">既存機能</div>
+          <div class="list-item active" id="li-e1" onclick="selectItem('email','e1')">
+            <div class="list-avatar" style="background:var(--accent-bg);border-color:#bfdbfe;color:var(--accent);">SC</div>
+            <div class="list-item-body">
+              <div class="list-item-name">スキャン結果セクション</div>
+              <div class="list-item-sub">CSV添付 · GC/S/Aランク</div>
+            </div>
+            <span class="list-item-badge badge-blue">既存</span>
+          </div>
+          <div class="list-group-label">新規追加</div>
+          <div class="list-item" id="li-e2" onclick="selectItem('email','e2')">
+            <div class="list-avatar orange">YT</div>
+            <div class="list-item-body">
+              <div class="list-item-name">YouTube要約セクション</div>
+              <div class="list-item-sub">5ch要約 + 矛盾アラート</div>
+            </div>
+            <span class="list-item-badge badge-orange">新規</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 実装リスト -->
+      <div id="list-impl" style="display:none;">
+        <div class="pane2-header">実装状況 <span class="pane2-count">4ファイル</span></div>
+        <div class="list-group">
+          <div class="list-group-label">新規作成</div>
+          <div class="list-item active" id="li-i1" onclick="selectItem('impl','i1')">
+            <div class="list-avatar ok">PY</div>
+            <div class="list-item-body">
+              <div class="list-item-name">fetch_youtube_summary.py</div>
+              <div class="list-item-sub">実装済み</div>
+            </div>
+            <span class="list-item-badge badge-ok">完了</span>
+          </div>
+          <div class="list-group-label">更新</div>
+          <div class="list-item" id="li-i2" onclick="selectItem('impl','i2')">
+            <div class="list-avatar" style="background:var(--accent-bg);border-color:#bfdbfe;color:var(--accent);">PY</div>
+            <div class="list-item-body">
+              <div class="list-item-name">send_mail.py</div>
+              <div class="list-item-sub">YouTube セクション追記済み</div>
+            </div>
+            <span class="list-item-badge badge-blue">更新済</span>
+          </div>
+          <div class="list-item" id="li-i3" onclick="selectItem('impl','i3')">
+            <div class="list-avatar" style="background:var(--accent-bg);border-color:#bfdbfe;color:var(--accent);">YML</div>
+            <div class="list-item-body">
+              <div class="list-item-name">scan.yml</div>
+              <div class="list-item-sub">新依存・Secrets 追加済み</div>
+            </div>
+            <span class="list-item-badge badge-blue">更新済</span>
+          </div>
+          <div class="list-group-label">設定（要対応）</div>
+          <div class="list-item" id="li-i4" onclick="selectItem('impl','i4')">
+            <div class="list-avatar orange">SEC</div>
+            <div class="list-item-body">
+              <div class="list-item-name">GitHub Secrets 追加</div>
+              <div class="list-item-sub">YOUTUBE_API_KEY / GEMINI_API_KEY</div>
+            </div>
+            <span class="list-item-badge badge-orange">要設定</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ PANE 3: ダッシュボード ════ -->
+    <div class="pane3">
+
+      <!-- ── pain / p1 ── -->
+      <div id="dash-pain-p1" class="pane-section visible">
+        <div class="pane3-header">
+          <div class="pane3-title">複数チャンネルを全部見る時間がない</div>
+          <div class="pane3-meta">
+            <span class="list-item-badge badge-danger">★★★ 最重要</span>
+            <span>·</span>
+            <span>毎朝</span>
+            <span>·</span>
+            <span style="color:var(--danger);">未解決</span>
+          </div>
+        </div>
+        <div class="pane3-body">
+          <div class="diagram">
+            <svg viewBox="0 0 560 145" xmlns="http://www.w3.org/2000/svg" width="560" height="145">
+              <defs>
+                <marker id="ra" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#dc2626"/></marker>
+                <marker id="ga" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#16a34a"/></marker>
+              </defs>
+              <text x="100" y="14" text-anchor="middle" fill="#94a3b8" font-size="10">参考チャンネル（5つ）</text>
+              <rect x="5"  y="22" width="65" height="34" rx="5" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+              <text x="37" y="36" text-anchor="middle" fill="#dc2626" font-size="8.5">波乗り</text>
+              <text x="37" y="48" text-anchor="middle" fill="#dc2626" font-size="8.5">チャート向川</text>
+              <rect x="76" y="22" width="65" height="34" rx="5" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+              <text x="108" y="42" text-anchor="middle" fill="#dc2626" font-size="8.5">1up投資</text>
+              <rect x="5"  y="64" width="65" height="34" rx="5" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+              <text x="37" y="84" text-anchor="middle" fill="#dc2626" font-size="8.5">CLEARTRADE</text>
+              <rect x="76" y="64" width="65" height="34" rx="5" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+              <text x="108" y="84" text-anchor="middle" fill="#dc2626" font-size="8.5">トレードラボ</text>
+              <rect x="5"  y="106" width="65" height="30" rx="5" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+              <text x="37" y="124" text-anchor="middle" fill="#dc2626" font-size="8.5">お茶のGS</text>
+              <line x1="73"  y1="39" x2="205" y2="62" stroke="#dc2626" stroke-width="1.5" marker-end="url(#ra)"/>
+              <line x1="143" y1="39" x2="207" y2="57" stroke="#dc2626" stroke-width="1.5" marker-end="url(#ra)"/>
+              <line x1="73"  y1="81" x2="206" y2="70" stroke="#dc2626" stroke-width="1.5" marker-end="url(#ra)"/>
+              <line x1="143" y1="81" x2="207" y2="71" stroke="#dc2626" stroke-width="1.5" marker-end="url(#ra)"/>
+              <line x1="72"  y1="121" x2="206" y2="80" stroke="#dc2626" stroke-width="1.5" marker-end="url(#ra)"/>
+              <circle cx="224" cy="72" r="22" fill="#fff7ed" stroke="#f97316" stroke-width="2"/>
+              <text x="224" y="68" text-anchor="middle" fill="#f97316" font-size="9">全部</text>
+              <text x="224" y="80" text-anchor="middle" fill="#f97316" font-size="9">見れない</text>
+              <rect x="260" y="34" width="145" height="58" rx="7" fill="#fff7ed" stroke="#f97316" stroke-width="1.5"/>
+              <polygon points="260,62 247,62 260,70" fill="#fff7ed"/>
+              <text x="332" y="52" text-anchor="middle" fill="#92400e" font-size="9">全部見ると60分以上/日</text>
+              <text x="332" y="65" text-anchor="middle" fill="#92400e" font-size="9">見落としで後で後悔</text>
+              <text x="332" y="78" text-anchor="middle" fill="#92400e" font-size="9">矛盾に気づかない</text>
+              <rect x="418" y="42" width="130" height="62" rx="7" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+              <text x="483" y="60" text-anchor="middle" fill="#16a34a" font-size="9" font-weight="bold">解決策（今回作るもの）</text>
+              <text x="483" y="75" text-anchor="middle" fill="#15803d" font-size="8.5">メール1通に要約が全部</text>
+              <text x="483" y="88" text-anchor="middle" fill="#15803d" font-size="8.5">矛盾は警告マーク付き</text>
+              <text x="483" y="101" text-anchor="middle" fill="#2563eb" font-size="9" font-weight="bold">朝5分で判断完了</text>
+            </svg>
+          </div>
+          <div class="section-card">
+            <h3>選考フロー（解決ステップ）</h3>
+            <div class="flow-steps">
+              <div class="flow-step-item">
+                <div class="flow-step-circle done">✓</div>
+                <div class="flow-step-info">
+                  <div class="flow-step-name">課題の言語化（grill-me）</div>
+                  <div class="flow-step-desc">受益者・痛み・成功定義を固めた</div>
+                </div>
+                <div class="flow-step-date" style="color:var(--ok);">完了</div>
+              </div>
+              <div class="flow-step-item active">
+                <div class="flow-step-circle active-c">→</div>
+                <div class="flow-step-info">
+                  <div class="flow-step-name">YouTube字幕取得の実装</div>
+                  <div class="flow-step-desc">fetch_youtube_summary.py 作成済み</div>
+                </div>
+                <div class="flow-step-date" style="color:var(--accent);">実装済み</div>
+              </div>
+              <div class="flow-step-item">
+                <div class="flow-step-circle active-c">→</div>
+                <div class="flow-step-info">
+                  <div class="flow-step-name">GitHub Secrets 設定</div>
+                  <div class="flow-step-desc">YOUTUBE_API_KEY / GEMINI_API_KEY</div>
+                </div>
+                <div class="flow-step-date" style="color:var(--orange);">要対応</div>
+              </div>
+              <div class="flow-step-item">
+                <div class="flow-step-circle todo"></div>
+                <div class="flow-step-info">
+                  <div class="flow-step-name">本番稼働確認</div>
+                  <div class="flow-step-desc">GitHub Actions で実際のメール受信を確認</div>
+                </div>
+                <div class="flow-step-date" style="color:var(--muted);">未着手</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── pain / p2 ── -->
+      <div id="dash-pain-p2" class="pane-section">
+        <div class="pane3-header">
+          <div class="pane3-title">見逃した情報で後日損をする</div>
+          <div class="pane3-meta">
+            <span class="list-item-badge badge-danger">★★★ 最重要</span>
+            <span>·</span><span>売買後</span><span>·</span>
+            <span style="color:var(--danger);">未解決</span>
+          </div>
+        </div>
+        <div class="pane3-body">
+          <div class="ba-grid">
+            <div class="ba-side ba-before">
+              <div class="ba-label">Before</div>
+              <div class="ba-item">動画を見逃す日が続く</div>
+              <div class="ba-item">後から「あの動画で言ってた…」</div>
+              <div class="ba-item">見落としが直接コストになる</div>
+            </div>
+            <div class="ba-side ba-after">
+              <div class="ba-label">After</div>
+              <div class="ba-item">全チャンネル更新を100%キャッチ</div>
+              <div class="ba-item">更新がない日も「本日更新なし」と記録</div>
+              <div class="ba-item">見落とし→ゼロ</div>
+            </div>
+          </div>
+          <div class="section-card">
+            <h3>時間削減イメージ</h3>
+            <svg viewBox="0 0 440 100" xmlns="http://www.w3.org/2000/svg" width="440" height="100">
+              <line x1="55" y1="90" x2="420" y2="90" stroke="#e2e8f0" stroke-width="1.5"/>
+              <line x1="55" y1="10" x2="55"  y2="90" stroke="#e2e8f0" stroke-width="1.5"/>
+              <text x="50" y="92" text-anchor="end" fill="#94a3b8" font-size="9">0</text>
+              <text x="50" y="67" text-anchor="end" fill="#94a3b8" font-size="9">20分</text>
+              <text x="50" y="42" text-anchor="end" fill="#94a3b8" font-size="9">40分</text>
+              <text x="50" y="18" text-anchor="end" fill="#94a3b8" font-size="9">60分</text>
+              <rect x="100" y="15" width="70" height="75" rx="4" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+              <text x="135" y="78" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="700">60分</text>
+              <text x="135" y="98" text-anchor="middle" fill="#94a3b8" font-size="9">導入前</text>
+              <rect x="260" y="83" width="70" height="7" rx="3" fill="#86efac" stroke="#16a34a" stroke-width="1.5"/>
+              <text x="295" y="80" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="700">5分</text>
+              <text x="295" y="98" text-anchor="middle" fill="#94a3b8" font-size="9">導入後（目標）</text>
+              <line x1="175" y1="52" x2="255" y2="52" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3"/>
+              <text x="215" y="47" text-anchor="middle" fill="#d97706" font-size="9" font-weight="700">約55分削減</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── pain / p3 ── -->
+      <div id="dash-pain-p3" class="pane-section">
+        <div class="pane3-header">
+          <div class="pane3-title">チャンネル間の矛盾に気づかない</div>
+          <div class="pane3-meta">
+            <span class="list-item-badge badge-warn">★★☆</span>
+            <span>·</span><span>判断時</span><span>·</span>
+            <span style="color:var(--warn);">未解決</span>
+          </div>
+        </div>
+        <div class="pane3-body">
+          <div class="section-card">
+            <h3>矛盾アラートの実例（メール内イメージ）</h3>
+            <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;padding:0.65rem;margin-bottom:0.5rem;font-size:0.8rem;">
+              <span style="background:#dc2626;color:white;border-radius:3px;padding:0.05rem 0.35rem;font-size:0.7rem;font-weight:700;margin-right:0.35rem;">矛盾</span>
+              <strong>CLEARTRADEチャンネル</strong> — 「押し目は10%以上待て」<br>
+              <span style="color:var(--muted);font-size:0.75rem;">波乗りルールは1.0〜1.5×ATR（約3〜5%相当）のため、深すぎる待機は戦略と合わない可能性。</span>
+            </div>
+            <div style="background:var(--ok-bg);border:1px solid #86efac;border-radius:6px;padding:0.65rem;font-size:0.8rem;">
+              <span style="background:var(--ok);color:white;border-radius:3px;padding:0.05rem 0.35rem;font-size:0.7rem;font-weight:700;margin-right:0.35rem;">一致</span>
+              <strong>波乗りチャート向川</strong> — 「MA5が20日線上で維持されていることが条件」<br>
+              <span style="color:var(--muted);font-size:0.75rem;">波乗りルールのトレンドフィルター T1・T2 と合致しています。</span>
+            </div>
+          </div>
+          <div class="section-card">
+            <h3>仕組み</h3>
+            <p style="font-size:0.82rem;">Gemini AI が各チャンネルの字幕内容を <strong>system_spec.md（波乗りルール）</strong> と照合し、明確に相反する主張がある場合に警告を自動付与します。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── pain / p4 ── -->
+      <div id="dash-pain-p4" class="pane-section">
+        <div class="pane3-header">
+          <div class="pane3-title">波乗りルールと違う手法を混ぜてしまう</div>
+          <div class="pane3-meta">
+            <span class="list-item-badge badge-warn">★★☆</span>
+            <span>·</span><span>エントリー時</span><span>·</span>
+            <span style="color:var(--warn);">未解決</span>
+          </div>
+        </div>
+        <div class="pane3-body">
+          <div class="section-card">
+            <h3>波乗りシステム 主要ルール（比較基準）</h3>
+            <table>
+              <thead><tr><th>条件</th><th>内容</th></tr></thead>
+              <tbody>
+                <tr><td>スクリーニング</td><td>出来高急増 / 高値ブレイク / モメンタム（3条件AND）</td></tr>
+                <tr><td>トレンドフィルター</td><td>銘柄終値 > MA20 / TOPIX終値 > MA20</td></tr>
+                <tr><td>押し目</td><td>ATR(14) × 1.0〜1.5（約3〜5%）</td></tr>
+                <tr><td>エントリー</td><td>高値ブレイク or 包み足 + 出来高再拡大</td></tr>
+                <tr><td>損切り</td><td>終値 ≤ エントリー × 0.95</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="section-card">
+            <h3>矛盾フラグの効果</h3>
+            <p style="font-size:0.82rem;">AIが各チャンネルの主張をルールと照合して警告を出すため、「Aチャンネルが言っていたから」という感覚的な判断を防ぐことができます。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── pain / p5 ── -->
+      <div id="dash-pain-p5" class="pane-section">
+        <div class="pane3-header">
+          <div class="pane3-title">何万通りの手法から選べない</div>
+          <div class="pane3-meta">
+            <span class="list-item-badge badge-ok">★☆☆</span>
+            <span>·</span><span>継続的</span><span>·</span>
+            <span style="color:var(--ok);">波乗りシステムで部分解決済み</span>
+          </div>
+        </div>
+        <div class="pane3-body">
+          <div class="section-card">
+            <h3>解決状況</h3>
+            <p style="font-size:0.82rem;">波乗りスキャナーの実装によって、複数の基準軸を同時に満たすスクリーニング条件を確立済み。毎日自動でフィルタリングされるため、「何を見るか」の迷いは大幅に減少しています。</p>
+          </div>
+          <div style="background:var(--ok-bg);border:1px solid #86efac;border-radius:8px;padding:0.75rem 0.9rem;font-size:0.82rem;">
+            <strong style="color:var(--ok);">部分解決済み</strong>：今回のYouTube連動は、ルールへの「迷い」ではなく「情報収集の漏れ」を解決する別の問題です。
+          </div>
+        </div>
+      </div>
+
+      <!-- ── solution / s1 ── -->
+      <div id="dash-solution-s1" class="pane-section">
+        <div class="pane3-header">
+          <div class="pane3-title">YouTube 字幕取得</div>
+          <div class="pane3-meta">
+            <span class="list-item-badge badge-orange">新規追加</span>
+            <span>·</span><span>fetch_youtube_summary.py</span>
+          </div>
+        </div>
+        <div class="pane3-body">
+          <div class="diagram">
+            <svg viewBox="0 0 520 90" xmlns="http://www.w3.org/2000/svg" width="520" height="90">
+              <defs><marker id="ab" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2563eb"/></marker></defs>
+              <rect x="8" y="20" width="100" height="50" rx="7" fill="#fff7ed" stroke="#fed7aa" stroke-width="2"/>
+              <text x="58" y="40" text-anchor="middle" fill="#9a3412" font-size="11">YouTube</text>
+              <text x="58" y="55" text-anchor="middle" fill="#64748b" font-size="9">5チャンネル</text>
+              <line x1="110" y1="45" x2="138" y2="45" stroke="#ea580c" stroke-width="2" marker-end="url(#ab)"/>
+              <rect x="140" y="20" width="110" height="50" rx="7" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+              <text x="195" y="40" text-anchor="middle" fill="#475569" font-size="11">YouTube API</text>
+              <text x="195" y="55" text-anchor="middle" fill="#64748b" font-size="9">動画リスト取得</text>
+              <line x1="252" y1="45" x2="280" y2="45" stroke="#ea580c" stroke-width="2" marker-end="url(#ab)"/>
+              <rect x="282" y="20" width="120" height="50" rx="7" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+              <text x="342" y="40" text-anchor="middle" fill="#475569" font-size="11">字幕API</text>
+              <text x="342" y="55" text-anchor="middle" fill="#64748b" font-size="9">日本語字幕テキスト</text>
+              <line x1="404" y1="45" x2="432" y2="45" stroke="#ea580c" stroke-width="2" marker-end="url(#ab)"/>
+              <rect x="434" y="20" width="78" height="50" rx="7" fill="#fff7ed" stroke="#fed7aa" stroke-width="2"/>
+              <text x="473" y="40" text-anchor="middle" fill="#9a3412" font-size="11">テキスト</text>
+              <text x="473" y="55" text-anchor="middle" fill="#64748b" font-size="9">Geminiへ</text>
+            </svg>
+          </div>
+          <div class="section-card">
+            <h3>処理内容</h3>
+            <table>
+              <thead><tr><th>処理</th><th>詳細</th></tr></thead>
+              <tbody>
+                <tr><td>チャンネルID取得</td><td>@ハンドル → channel_id を自動解決</td></tr>
+                <tr><td>動画検索</td><td>過去24時間以内の新着動画（最大5本/ch）</td></tr>
+                <tr><td>字幕取得</td><td>日本語優先、英語フォールバック</td></tr>
+                <tr><td>文字数制限</td><td>8,000文字でトリムしてGeminiへ渡す</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── solution / s2 ── -->
+      <div id="dash-solution-s2" class="pane-section">
+        <div class="pane3-header">
+          <div class="pane3-title">Gemini AI 要約 + 矛盾フラグ</div>
+          <div class="pane3-meta">
+            <span class="list-item-badge badge-orange">新規追加</span>
+            <span>·</span><span>Gemini 2.0 Flash</span>
+          </div>
+        </div>
+        <div class="pane3-body">
+          <div class="section-card">
+            <h3>プロンプト設計</h3>
+            <p style="font-size:0.82rem;">Gemini に「波乗りシステムのルール（system_spec.md）」を渡し、各動画の内容を要約させながら、ルールとの矛盾を自動検出させます。</p>
+            <div style="background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:0.6rem;margin-top:0.5rem;font-size:0.75rem;font-family:monospace;color:#475569;">
+              入力: タイトル + 字幕テキスト + system_spec.md<br>
+              出力: { "summary": "3〜5行の要約", "conflict": true/false, "conflict_detail": "..." }
+            </div>
+          </div>
+          <div class="section-card">
+            <h3>出力例</h3>
+            <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:5px;padding:0.6rem;margin-bottom:0.4rem;font-size:0.78rem;">
+              <strong style="color:var(--danger);">conflict: true</strong><br>
+              <span style="color:var(--muted);">押し目について波乗りルール（1〜1.5×ATR）と異なる主張あり</span>
+            </div>
+            <div style="background:var(--ok-bg);border:1px solid #86efac;border-radius:5px;padding:0.6rem;font-size:0.78rem;">
+              <strong style="color:var(--ok);">conflict: false</strong><br>
+              <span style="color:var(--muted);">波乗りルールとの矛盾なし。MA5・出来高条件の解説で一致。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── solution / s3 ── -->
+      <div id="dash-solution-s3" class="pane-section">
+        <div class="pane3-header">
+          <div class="pane3-title">メール統合配信</div>
+          <div class="pane3-meta">
+            <span class="list-item-badge badge-blue">既存を拡張</span>
+            <span>·</span><span>send_mail.py</span>
+          </div>
+        </div>
+        <div class="pane3-body">
+          <div class="section-card">
+            <h3>メール構成（追記後）</h3>
+            <table>
+              <thead><tr><th>セクション</th><th>内容</th><th>種別</th></tr></thead>
+              <tbody>
+                <tr><td>シグナル集計</td><td>GC/S/Aランク件数</td><td><span class="list-item-badge badge-blue">既存</span></td></tr>
+                <tr><td>YouTube要約</td><td>5ch × 要約3〜5行 + 矛盾マーク</td><td><span class="list-item-badge badge-orange">新規</span></td></tr>
+                <tr><td>CSV添付</td><td>銘柄一覧（JPX400/SP500）</td><td><span class="list-item-badge badge-blue">既存</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="ba-grid">
+            <div class="ba-side ba-before">
+              <div class="ba-label">追記前</div>
+              <div class="ba-item">スキャン結果のみ</div>
+              <div class="ba-item">YouTube情報なし</div>
+            </div>
+            <div class="ba-side ba-after">
+              <div class="ba-label">追記後</div>
+              <div class="ba-item">スキャン結果 + YouTube要約</div>
+              <div class="ba-item">矛盾アラート付き</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── channel ── -->
+      <div id="dash-channel-c1" class="pane-section">
+        <div class="pane3-header">
+          <div class="pane3-title">波乗りチャート向川</div>
+          <div class="pane3-meta"><span class="list-item-badge badge-ok">基準チャンネル</span><span>·</span><span>波乗りシステム考案者</span></div>
+        </div>
+        <div class="pane3-body">
+          <div class="section-card">
+            <h3>役割</h3>
+            <p style="font-size:0.82rem;">波乗りトレードシステムの考案者。このチャンネルの考え方が <code>system_spec.md</code> に反映されており、矛盾判定の<strong>基準</strong>として使います。</p>
+          </div>
+          <div class="section-card">
+            <h3>処理</h3>
+            <p style="font-size:0.82rem;">他のチャンネルと同様に字幕要約を実施します。このチャンネルの主張はほぼ常にルールと一致するため、矛盾フラグが立つことはほぼありません。</p>
+          </div>
+        </div>
+      </div>
+      <div id="dash-channel-c2" class="pane-section">
+        <div class="pane3-header"><div class="pane3-title">1up投資</div><div class="pane3-meta"><span class="list-item-badge badge-gray">参考チャンネル</span></div></div>
+        <div class="pane3-body"><div class="section-card"><h3>処理概要</h3><p style="font-size:0.82rem;">過去24時間の新着動画を自動取得し、字幕をGeminiで要約。波乗りルールとの矛盾がある場合は警告マークを付与してメールに含めます。</p></div></div>
+      </div>
+      <div id="dash-channel-c3" class="pane-section">
+        <div class="pane3-header"><div class="pane3-title">CLEARTRADE</div><div class="pane3-meta"><span class="list-item-badge badge-orange">要注意（矛盾実績あり）</span></div></div>
+        <div class="pane3-body">
+          <div class="section-card"><h3>矛盾実績</h3>
+            <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:5px;padding:0.6rem;font-size:0.8rem;">
+              <span style="background:#dc2626;color:white;border-radius:3px;padding:0.05rem 0.3rem;font-size:0.7rem;font-weight:700;margin-right:0.3rem;">矛盾</span>「押し目は10%以上待て」→ 波乗りルール（約3〜5%）と相反
+            </div>
+          </div>
+          <div class="section-card"><h3>方針</h3><p style="font-size:0.82rem;">矛盾があっても除外はせず、警告マーク付きで情報として受け取ります。「波乗りと違う考え方もある」という<strong>参考情報</strong>として活用します。</p></div>
+        </div>
+      </div>
+      <div id="dash-channel-c4" class="pane-section">
+        <div class="pane3-header"><div class="pane3-title">トレードラボ</div><div class="pane3-meta"><span class="list-item-badge badge-gray">参考チャンネル</span></div></div>
+        <div class="pane3-body"><div class="section-card"><h3>処理概要</h3><p style="font-size:0.82rem;">過去24時間の新着動画を自動取得し、字幕をGeminiで要約してメールに含めます。</p></div></div>
+      </div>
+      <div id="dash-channel-c5" class="pane-section">
+        <div class="pane3-header"><div class="pane3-title">お茶のゴールドマン</div><div class="pane3-meta"><span class="list-item-badge badge-gray">参考チャンネル</span></div></div>
+        <div class="pane3-body"><div class="section-card"><h3>処理概要</h3><p style="font-size:0.82rem;">過去24時間の新着動画を自動取得し、字幕をGeminiで要約してメールに含めます。</p></div></div>
+      </div>
+
+      <!-- ── email ── -->
+      <div id="dash-email-e1" class="pane-section">
+        <div class="pane3-header"><div class="pane3-title">スキャン結果セクション</div><div class="pane3-meta"><span class="list-item-badge badge-blue">既存機能</span></div></div>
+        <div class="pane3-body">
+          <div class="mail-mock">
+            <div class="mail-top"><div class="mail-subj">[波乗りスキャナー] 05/15 シグナル 12件 (GC:3 / S:5 / A:4)</div><div style="color:var(--muted);font-size:0.72rem;">Nami Scanner · 毎朝 07:30 JST</div></div>
+            <div class="mail-body-inner">
+              <div class="mail-sec-t">本日のシグナル集計</div>
+              <table style="font-size:0.75rem;margin:0;">
+                <thead><tr><th>市場</th><th>GC本日</th><th>S</th><th>A</th></tr></thead>
+                <tbody><tr><td>JPX400</td><td>2件</td><td>3件</td><td>2件</td></tr><tr><td>SP500</td><td>1件</td><td>2件</td><td>2件</td></tr></tbody>
+              </table>
+              <p style="color:var(--muted);font-size:0.72rem;margin-top:0.4rem;">添付: jpx400_signals_2026-05-15.csv / sp500_signals_2026-05-15.csv</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="dash-email-e2" class="pane-section">
+        <div class="pane3-header"><div class="pane3-title">YouTube要約セクション</div><div class="pane3-meta"><span class="list-item-badge badge-orange">新規追加</span><span>·</span><span>5チャンネル</span></div></div>
+        <div class="pane3-body">
+          <div class="mail-mock">
+            <div class="mail-top"><div class="mail-subj">[波乗りスキャナー] 05/15 シグナル 12件 (GC:3 / S:5 / A:4)</div></div>
+            <div class="mail-body-inner">
+              <div class="mail-sec-t orange">YouTube チャンネル最新情報（過去24時間）</div>
+              <div class="mail-row-m"><span class="mail-ch-m">⭐ 波乗りチャート向川</span><span class="mail-sum-m">MA5が20日線を割り込んだ時の対処法。ATR活用を再確認。</span><span class="mail-bo">一致</span></div>
+              <div class="mail-row-m"><span class="mail-ch-m">CLEARTRADE</span><span class="mail-sum-m">今週の相場展望。10%以上の深い押し目を推奨する場面あり。</span><span class="mail-bw">矛盾</span></div>
+              <div class="mail-row-m" style="opacity:0.45;"><span class="mail-ch-m">1up投資</span><span class="mail-sum-m">本日更新なし</span></div>
+              <div class="mail-row-m"><span class="mail-ch-m">トレードラボ</span><span class="mail-sum-m">GC後のエントリータイミング解説。出来高再拡大の重要性。</span><span class="mail-bo">一致</span></div>
+              <div class="mail-row-m" style="opacity:0.45;"><span class="mail-ch-m">お茶のGS</span><span class="mail-sum-m">本日更新なし</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── impl ── -->
+      <div id="dash-impl-i1" class="pane-section">
+        <div class="pane3-header"><div class="pane3-title">fetch_youtube_summary.py</div><div class="pane3-meta"><span class="list-item-badge badge-ok">実装済み</span><span>·</span><span>新規作成</span></div></div>
+        <div class="pane3-body">
+          <div class="section-card"><h3>主な関数</h3>
+            <table><thead><tr><th>関数名</th><th>役割</th></tr></thead>
+            <tbody>
+              <tr><td><code>_get_channel_id()</code></td><td>@ハンドル → channel_id 解決</td></tr>
+              <tr><td><code>_get_recent_videos()</code></td><td>過去24時間の動画一覧取得</td></tr>
+              <tr><td><code>_get_transcript()</code></td><td>日本語字幕テキスト取得</td></tr>
+              <tr><td><code>_summarize()</code></td><td>Gemini で要約 + 矛盾フラグ生成</td></tr>
+              <tr><td><code>build_youtube_html_section()</code></td><td>メール用HTML生成（公開API）</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+      <div id="dash-impl-i2" class="pane-section">
+        <div class="pane3-header"><div class="pane3-title">send_mail.py</div><div class="pane3-meta"><span class="list-item-badge badge-blue">更新済み</span></div></div>
+        <div class="pane3-body"><div class="section-card"><h3>変更内容</h3><p style="font-size:0.82rem;"><code>build_youtube_html_section()</code> を呼び出し、メール本文の「ウェブ版で確認」セクションの直前にYouTube要約セクションを自動挿入します。YOUTUBE_API_KEY 未設定時は空文字を返してスキップ。</p></div></div>
+      </div>
+      <div id="dash-impl-i3" class="pane-section">
+        <div class="pane3-header"><div class="pane3-title">scan.yml</div><div class="pane3-meta"><span class="list-item-badge badge-blue">更新済み</span></div></div>
+        <div class="pane3-body"><div class="section-card"><h3>変更内容</h3>
+          <table><thead><tr><th>変更</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td>依存追加</td><td>google-api-python-client / youtube-transcript-api / google-generativeai</td></tr>
+            <tr><td>Secrets追加</td><td>YOUTUBE_API_KEY / GEMINI_API_KEY</td></tr>
+          </tbody></table>
+        </div></div>
+      </div>
+      <div id="dash-impl-i4" class="pane-section">
+        <div class="pane3-header"><div class="pane3-title">GitHub Secrets 追加</div><div class="pane3-meta"><span class="list-item-badge badge-orange">要対応</span></div></div>
+        <div class="pane3-body">
+          <div class="section-card"><h3>設定が必要なSecrets</h3>
+            <table><thead><tr><th>シークレット名</th><th>取得場所</th><th>料金</th></tr></thead>
+            <tbody>
+              <tr><td><code>YOUTUBE_API_KEY</code></td><td>Google Cloud Console → YouTube Data API v3</td><td style="color:var(--ok);">無料枠</td></tr>
+              <tr><td><code>GEMINI_API_KEY</code></td><td>Google AI Studio</td><td style="color:var(--ok);">無料枠</td></tr>
+            </tbody></table>
+          </div>
+          <div style="background:var(--warn-bg);border:1px solid #fde68a;border-radius:6px;padding:0.65rem;font-size:0.82rem;margin-top:0.5rem;">
+            <strong style="color:var(--warn);">未対応</strong>：この2つを設定するまで、YouTube要約セクションはメールに表示されません（スキャン結果は通常通り送信されます）。
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane3 -->
+
+    <!-- ════ PANE 4: 詳細パネル ════ -->
+    <div class="pane4">
+      <div class="pane4-header">
+        <span id="p4-title">詳細</span>
+      </div>
+      <div class="pane4-body" id="p4-body">
+
+        <!-- pain detail -->
+        <div id="p4-pain" class="pane-section visible">
+          <div class="field-group">
+            <div class="field-group-title">基本情報</div>
+            <div class="field-row">
+              <div class="field-label">発生タイミング</div>
+              <div class="field-value" id="p4-timing">毎朝</div>
+            </div>
+            <div class="field-row">
+              <div class="field-label">解決状況</div>
+              <select class="field-select"><option>未解決</option><option>対応中</option><option>解決済み</option></select>
+            </div>
+            <div class="field-row">
+              <div class="field-label">担当</div>
+              <div class="field-value">自分（個人投資家）</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="field-group">
+            <div class="field-group-title">重大度</div>
+            <div class="rating-row"><div class="rating-label">影響度</div><div id="p4-stars"><span class="stars">★★★</span></div></div>
+            <div class="rating-row"><div class="rating-label">緊急度</div><div><span class="stars">★★★</span></div></div>
+            <div class="rating-row"><div class="rating-label">解決難度</div><div><span class="stars">★★<span class="empty">★</span></span></div></div>
+          </div>
+          <div class="divider"></div>
+          <div class="field-group">
+            <div class="field-group-title">担当者コメント</div>
+            <div class="comment-box" id="p4-comment">
+              5チャンネルすべてを毎朝視聴するのは現実的に不可能。YouTube連動で自動要約が届けば、朝5分で全情報をキャッチできる。
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="field-group">
+            <div class="field-group-title">紐付く解決策</div>
+            <div class="field-value" id="p4-solution" style="font-size:0.8rem;color:var(--accent);">S1: YouTube字幕取得 → S2: Gemini要約</div>
+          </div>
+        </div>
+
+        <!-- solution detail -->
+        <div id="p4-solution-panel" class="pane-section">
+          <div class="field-group">
+            <div class="field-group-title">実装情報</div>
+            <div class="field-row"><div class="field-label">ファイル</div><div class="field-value" id="p4-s-file">fetch_youtube_summary.py</div></div>
+            <div class="field-row"><div class="field-label">状態</div><select class="field-select"><option>実装済み</option><option>テスト中</option><option>未着手</option></select></div>
+            <div class="field-row"><div class="field-label">API使用</div><div class="field-value" id="p4-s-api">YouTube Data API v3</div></div>
+          </div>
+          <div class="divider"></div>
+          <div class="field-group">
+            <div class="field-group-title">解決するペイン</div>
+            <div class="field-value" id="p4-s-solves" style="font-size:0.8rem;color:var(--orange);">P1: 時間がない<br>P2: 見落とし<br>P3: 矛盾に気づかない</div>
+          </div>
+        </div>
+
+        <!-- channel detail -->
+        <div id="p4-channel-panel" class="pane-section">
+          <div class="field-group">
+            <div class="field-group-title">チャンネル情報</div>
+            <div class="field-row"><div class="field-label">役割</div><div class="field-value" id="p4-ch-role">基準チャンネル</div></div>
+            <div class="field-row"><div class="field-label">矛盾判定</div><div class="field-value" id="p4-ch-conflict">対象外（基準）</div></div>
+            <div class="field-row"><div class="field-label">過去のアラート</div><div class="field-value" id="p4-ch-alert" style="color:var(--ok);">なし</div></div>
+          </div>
+          <div class="divider"></div>
+          <div class="field-group">
+            <div class="field-group-title">コメント</div>
+            <div class="comment-box" id="p4-ch-comment">波乗りシステムの考案者。このチャンネルの内容が基準ルールとして system_spec.md に記録されている。</div>
+          </div>
+        </div>
+
+        <!-- email detail -->
+        <div id="p4-email-panel" class="pane-section">
+          <div class="field-group">
+            <div class="field-group-title">配信情報</div>
+            <div class="field-row"><div class="field-label">配信時刻</div><div class="field-value">毎朝 07:30 JST（平日）</div></div>
+            <div class="field-row"><div class="field-label">配信サービス</div><div class="field-value">Resend</div></div>
+            <div class="field-row"><div class="field-label">種別</div><div class="field-value" id="p4-e-type" style="color:var(--accent);">既存機能</div></div>
+          </div>
+          <div class="divider"></div>
+          <div class="field-group">
+            <div class="field-group-title">コメント</div>
+            <div class="comment-box" id="p4-e-comment">スキャン結果のシグナル件数とCSV添付を毎朝送信する既存機能。シグナルが0件の日は送信をスキップ。</div>
+          </div>
+        </div>
+
+        <!-- impl detail -->
+        <div id="p4-impl-panel" class="pane-section">
+          <div class="field-group">
+            <div class="field-group-title">ファイル情報</div>
+            <div class="field-row"><div class="field-label">言語</div><div class="field-value">Python 3.12</div></div>
+            <div class="field-row"><div class="field-label">種別</div><div class="field-value" id="p4-i-type" style="color:var(--orange);">新規作成</div></div>
+            <div class="field-row"><div class="field-label">状態</div><select class="field-select" id="p4-i-status"><option>実装済み</option><option>要設定</option></select></div>
+          </div>
+          <div class="divider"></div>
+          <div class="field-group">
+            <div class="field-group-title">コメント</div>
+            <div class="comment-box" id="p4-i-comment">YouTube取得・Gemini要約・矛盾フラグ・HTML生成を担う中核スクリプト。build_youtube_html_section() を send_mail.py から呼び出す。</div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /pane4 -->
+
+  </div><!-- /panes -->
+</div><!-- /app -->
+
+<script>
+// ─── データ定義 ───
+const P4_DATA = {
+  pain: {
+    p1: { timing:'毎朝', stars:'★★★', comment:'5チャンネルを毎朝視聴するのは不可能。YouTube連動で自動要約が届けば朝5分で全情報をキャッチできる。', solution:'S1: YouTube字幕取得 → S2: Gemini要約', title:'複数チャンネルを全部見る時間がない' },
+    p2: { timing:'売買後', stars:'★★★', comment:'見逃した動画の情報で後日損をした経験あり。見落としゼロにすることが最優先。', solution:'S1: YouTube字幕取得（全チャンネル網羅）', title:'見逃した情報で後日損をする' },
+    p3: { timing:'判断時', stars:'★★☆', comment:'Aチャンネルが「買い」でBが「売り」でも、両方見ないと気づけない。矛盾フラグで即時通知。', solution:'S2: Gemini矛盾フラグ', title:'チャンネル間の矛盾に気づかない' },
+    p4: { timing:'エントリー時', stars:'★★☆', comment:'波乗りルールと違う考えを無意識に混ぜてしまうことがある。AIが基準と照合して警告を出す。', solution:'S2: Gemini矛盾フラグ', title:'波乗りルールと違う手法を混ぜてしまう' },
+    p5: { timing:'継続的', stars:'★☆☆', comment:'波乗りスキャナーの実装でスクリーニング条件を確立済み。今回の課題とは別の問題として整理。', solution:'波乗りシステムで解決済み', title:'何万通りの手法から選べない' },
+  },
+  solution: {
+    s1: { file:'fetch_youtube_summary.py', api:'YouTube Data API v3 + youtube-transcript-api', solves:'P1: 時間がない\nP2: 見落とし', title:'YouTube字幕取得' },
+    s2: { file:'fetch_youtube_summary.py (_summarize)', api:'Gemini 2.0 Flash', solves:'P3: 矛盾に気づかない\nP4: ルールと混在', title:'Gemini AI要約 + 矛盾フラグ' },
+    s3: { file:'send_mail.py', api:'Resend', solves:'P1/P2/P3/P4 全ペイン', title:'メール統合配信' },
+  },
+  channel: {
+    c1: { role:'基準チャンネル', conflict:'対象外（基準）', alert:'なし', comment:'波乗りシステムの考案者。内容がsystem_spec.mdの基準として記録されている。', title:'波乗りチャート向川' },
+    c2: { role:'参考チャンネル', conflict:'照合対象', alert:'なし（現在まで）', comment:'過去24時間の新着動画を取得・要約。矛盾がある場合は警告を付与。', title:'1up投資' },
+    c3: { role:'参考チャンネル', conflict:'照合対象', alert:'あり（押し目の深さ）', comment:'押し目の深さについて波乗りルールと異なる主張が見られる。参考情報として警告付きで表示。', title:'CLEARTRADE' },
+    c4: { role:'参考チャンネル', conflict:'照合対象', alert:'なし（現在まで）', comment:'過去24時間の新着動画を取得・要約。矛盾がある場合は警告を付与。', title:'トレードラボ' },
+    c5: { role:'参考チャンネル', conflict:'照合対象', alert:'なし（現在まで）', comment:'過去24時間の新着動画を取得・要約。矛盾がある場合は警告を付与。', title:'お茶のゴールドマン' },
+  },
+  email: {
+    e1: { type:'既存機能', comment:'スキャン結果のシグナル件数とCSV添付を毎朝送信。シグナルが0件の日は送信をスキップ。', title:'スキャン結果セクション' },
+    e2: { type:'新規追加', comment:'5チャンネルの昨日の更新を要約＋矛盾マーク付きでスキャン結果の後に追記。YOUTUBE_API_KEY 未設定の場合はスキップ。', title:'YouTube要約セクション' },
+  },
+  impl: {
+    i1: { type:'新規作成', status:'実装済み', comment:'YouTube取得・Gemini要約・矛盾フラグ・HTML生成を担う中核スクリプト。', title:'fetch_youtube_summary.py' },
+    i2: { type:'更新', status:'実装済み', comment:'build_youtube_html_section()を呼び出し、メール本文にYouTubeセクションを追記。', title:'send_mail.py' },
+    i3: { type:'更新', status:'実装済み', comment:'新ライブラリ3つの追加とYOUTUBE_API_KEY / GEMINI_API_KEYをSecretsに追加。', title:'scan.yml' },
+    i4: { type:'設定', status:'要設定', comment:'Google Cloud ConsoleとGoogle AI Studioで取得。どちらも無料枠で動作する。', title:'GitHub Secrets' },
+  },
+};
+
+let currentCat = 'pain';
+let currentItem = 'p1';
+
+function selectCat(cat) {
+  currentCat = cat;
+  // Pane1 ハイライト
+  ['pain','solution','channel','email','impl'].forEach(c => {
+    document.getElementById('cat-'+c).classList.toggle('active', c===cat);
+  });
+  // Pane2 表示切替
+  ['pain','solution','channel','email','impl'].forEach(c => {
+    document.getElementById('list-'+c).style.display = (c===cat)?'block':'none';
+  });
+  // 最初のアイテムを選択
+  const firstMap = {pain:'p1', solution:'s1', channel:'c1', email:'e1', impl:'i1'};
+  selectItem(cat, firstMap[cat]);
+  // breadcrumb
+  const labels = {pain:'ペイン構成', solution:'ソリューション設計', channel:'チャンネル管理', email:'メールプレビュー', impl:'実装状況'};
+  document.getElementById('bc2').textContent = labels[cat];
+}
+
+function selectItem(cat, item) {
+  currentCat = cat;
+  currentItem = item;
+  const data = P4_DATA[cat][item];
+
+  // Pane2 ハイライト解除（全catのリストアイテム）
+  document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
+  const li = document.getElementById('li-'+item);
+  if (li) li.classList.add('active');
+
+  // Pane3 切替（全セクション非表示→対象のみ表示）
+  document.querySelectorAll('.pane-section').forEach(el => el.classList.remove('visible'));
+  const dashId = 'dash-'+cat+'-'+item;
+  const dash = document.getElementById(dashId);
+  if (dash) dash.classList.add('visible');
+
+  // Pane4 切替
+  const p4Panels = {pain:'p4-pain', solution:'p4-solution-panel', channel:'p4-channel-panel', email:'p4-email-panel', impl:'p4-impl-panel'};
+  document.querySelectorAll('#p4-body .pane-section').forEach(el => el.classList.remove('visible'));
+  const panel = document.getElementById(p4Panels[cat]);
+  if (panel) panel.classList.add('visible');
+
+  // Pane4 データ更新
+  if (cat === 'pain') {
+    document.getElementById('p4-timing').textContent = data.timing;
+    document.getElementById('p4-stars').innerHTML = '<span class="stars">'+data.stars+'</span>';
+    document.getElementById('p4-comment').textContent = data.comment;
+    document.getElementById('p4-solution').textContent = data.solution;
+    document.getElementById('p4-title').textContent = 'ペイン詳細';
+  } else if (cat === 'solution') {
+    document.getElementById('p4-s-file').textContent = data.file;
+    document.getElementById('p4-s-api').textContent = data.api;
+    document.getElementById('p4-s-solves').innerHTML = data.solves.replace(/\n/g,'<br>');
+    document.getElementById('p4-title').textContent = 'ソリューション詳細';
+  } else if (cat === 'channel') {
+    document.getElementById('p4-ch-role').textContent = data.role;
+    document.getElementById('p4-ch-conflict').textContent = data.conflict;
+    const alertEl = document.getElementById('p4-ch-alert');
+    alertEl.textContent = data.alert;
+    alertEl.style.color = data.alert === 'なし（現在まで）' || data.alert === 'なし' ? 'var(--ok)' : 'var(--orange)';
+    document.getElementById('p4-ch-comment').textContent = data.comment;
+    document.getElementById('p4-title').textContent = 'チャンネル詳細';
+  } else if (cat === 'email') {
+    document.getElementById('p4-e-type').textContent = data.type;
+    document.getElementById('p4-e-type').style.color = data.type==='新規追加'?'var(--orange)':'var(--accent)';
+    document.getElementById('p4-e-comment').textContent = data.comment;
+    document.getElementById('p4-title').textContent = 'セクション詳細';
+  } else if (cat === 'impl') {
+    document.getElementById('p4-i-type').textContent = data.type;
+    document.getElementById('p4-i-type').style.color = data.type==='新規作成'?'var(--orange)':data.type==='設定'?'var(--warn)':'var(--accent)';
+    document.getElementById('p4-i-comment').textContent = data.comment;
+    document.getElementById('p4-title').textContent = 'ファイル詳細';
+  }
+
+  // breadcrumb
+  document.getElementById('bc3').textContent = data.title || item;
+}
+</script>
+</body>
+</html>
