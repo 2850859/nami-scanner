@@ -84,6 +84,16 @@ def _download_us_index(period: str) -> pd.DataFrame:
     raise SystemExit("US index download failed.")
 
 
+def _download_vix(period: str) -> Optional[pd.DataFrame]:
+    """VIX 指数をダウンロード（失敗時は None を返す）"""
+    df = _download_ohlcv("^VIX", period)
+    if df is not None and len(df) > 20:
+        print(f"  VIX: ^VIX ({len(df)} rows)")
+        return df[["close"]].rename(columns={"close": "vix"})
+    print("  WARN: VIX ダウンロード失敗 — VIXフィルタをスキップします")
+    return None
+
+
 def fetch_sector_map(tickers: list[str], pause: float = 0.08) -> Dict[str, str]:
     out: Dict[str, str] = {}
     for t in tickers:
@@ -206,6 +216,7 @@ def run_single(
     period: str,
     *,
     us_index: Optional[pd.DataFrame] = None,
+    vix_df: Optional[pd.DataFrame] = None,
 ) -> tuple:
     sector_gates = None
     if cfg.sector_filter_enabled and sector_map:
@@ -214,7 +225,7 @@ def run_single(
         print(f"  sector gates built for {len(sector_gates)} tickers")
 
     bt = Backtester(cfg, initial_capital=capital)
-    result = bt.run(panel, topix, sector_gates=sector_gates, us_index=us_index)
+    result = bt.run(panel, topix, sector_gates=sector_gates, us_index=us_index, vix_df=vix_df)
     metrics = calculate_metrics(result, capital)
     return result, metrics
 
@@ -301,6 +312,7 @@ def main() -> None:
     # 日付アライメント用: JP優先、US onlyの場合はus_indexをtopixとして使用
     if topix is None and us_index is not None:
         topix = us_index
+    vix_df = _download_vix(args.period) if not getattr(args, "no_vix_filter", False) else None
 
     panel: Dict[str, pd.DataFrame] = {}
     total = len(target_tickers)
@@ -393,6 +405,7 @@ def main() -> None:
         result, metrics = run_single(
             panel, topix, cfg, args.capital, sector_map, args.period,
             us_index=us_index,
+            vix_df=vix_df,
         )
         all_results[mode] = (result, metrics)
         print(f"\n=== entry_mode={mode} ===")

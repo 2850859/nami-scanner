@@ -63,6 +63,11 @@ class StrategyConfig:
     sma20_dev_max_us: float = 0.10       # JP 7% → US 10%（自然乖離が大きい）
     po_break_days_us: int = 3            # US株はPO崩れ3日連続で撤退（短期の揺れを無視）
 
+    # --- VIXフィルタ（v3.1）---
+    vix_threshold: float = 28.0          # VIX >= 28 で新規エントリー停止
+    vix_halt_threshold: float = 35.0     # VIX >= 35 で新規停止＋既存利確検討（バックテストでは停止のみ）
+    use_vix_filter: bool = True          # False でフィルタ無効化
+
     # --- cleartrade（legacy）---
     volume_multiplier: float = 2.0
     breakout_lookback: int = 20
@@ -745,6 +750,7 @@ class Backtester:
         sector_gates: Optional[Dict[str, pd.Series]] = None,
         *,
         us_index: Optional[pd.DataFrame] = None,
+        vix_df: Optional[pd.DataFrame] = None,
     ) -> Dict:
         cfg = self.cfg
         detector = SignalDetector(cfg)
@@ -768,6 +774,11 @@ class Backtester:
                 all_signals.append(sig)
 
         all_signals.sort(key=lambda s: s["date"])
+
+        # VIX 系列を日付インデックスで高速ルックアップできるよう準備
+        vix_series: Optional[pd.Series] = None
+        if cfg.use_vix_filter and vix_df is not None and "vix" in vix_df.columns:
+            vix_series = vix_df["vix"].sort_index()
 
         all_dates = sorted(set(d for df in enriched.values() for d in df.index))
 
@@ -919,7 +930,19 @@ class Backtester:
             ]
             today_signals.sort(key=lambda s: s["signal_score"], reverse=True)
 
+            # VIXフィルタ: VIX >= 28 のときは新規エントリー停止
+            vix_block = False
+            if vix_series is not None:
+                try:
+                    vix_val = vix_series.asof(current_date)
+                    if not pd.isna(vix_val) and float(vix_val) >= cfg.vix_threshold:
+                        vix_block = True
+                except Exception:
+                    pass
+
             for sig in today_signals:
+                if vix_block:
+                    break  # 本日は全シグナルをスキップ
                 total_equity = capital
                 for c, pos in positions.items():
                     if current_date in enriched[c].index:
