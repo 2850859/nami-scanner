@@ -68,6 +68,9 @@ class StrategyConfig:
     vix_halt_threshold: float = 35.0     # VIX >= 35 で新規停止＋既存利確検討（バックテストでは停止のみ）
     use_vix_filter: bool = True          # False でフィルタ無効化
 
+    # --- シグナルスコアフィルタ ---
+    signal_score_top_pct: float = 1.0    # 当日シグナルのうち上位X%のみエントリー（1.0で全件）
+
     # --- cleartrade（legacy）---
     volume_multiplier: float = 2.0
     breakout_lookback: int = 20
@@ -929,6 +932,11 @@ class Backtester:
                 if s["entry_date"] == current_date and s["code"] not in positions
             ]
             today_signals.sort(key=lambda s: s["signal_score"], reverse=True)
+
+            # シグナルスコア上位X%のみに絞る
+            if cfg.signal_score_top_pct < 1.0 and len(today_signals) > 1:
+                cutoff = max(1, int(len(today_signals) * cfg.signal_score_top_pct))
+                today_signals = today_signals[:cutoff]
 
             # VIXフィルタ: VIX >= 28 のときは新規エントリー停止
             vix_block = False
