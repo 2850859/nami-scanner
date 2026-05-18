@@ -72,6 +72,11 @@ class StrategyConfig:
     # --- シグナルスコアフィルタ ---
     signal_score_top_pct: float = 1.0    # 当日シグナルのうち上位X%のみエントリー（1.0で全件）
 
+    # --- 連続損失後サイズ縮小（L案）---
+    use_loss_streak_reduction: bool = True   # 有効/無効
+    loss_streak_trigger: int = 3             # X連敗後に縮小開始
+    loss_streak_size_pct: float = 0.5        # 縮小倍率（0.5=通常の50%）
+
     # --- cleartrade（legacy）---
     volume_multiplier: float = 2.0
     breakout_lookback: int = 20
@@ -783,6 +788,9 @@ class Backtester:
         if cfg.use_vix_filter and vix_df is not None and "vix" in vix_df.columns:
             vix_series = vix_df["vix"].sort_index()
 
+        # 連続損失カウンター
+        consecutive_losses: int = 0
+
         all_dates = sorted(set(d for df in enriched.values() for d in df.index))
 
         capital = self.initial_capital
@@ -926,6 +934,15 @@ class Backtester:
             for code in to_close:
                 del positions[code]
 
+            # 連続損失カウンターを trades の末尾から再計算
+            if cfg.use_loss_streak_reduction:
+                consecutive_losses = 0
+                for t in reversed(trades):
+                    if t.pnl < 0:
+                        consecutive_losses += 1
+                    else:
+                        break
+
             today_signals = [
                 s
                 for s in all_signals
@@ -956,13 +973,19 @@ class Backtester:
                     if current_date in enriched[c].index:
                         total_equity += enriched[c].loc[current_date, "close"] * pos.shares
 
+                # 連続損失後のサイズ縮小倍率
+                _size_mult = 1.0
+                if (cfg.use_loss_streak_reduction
+                        and consecutive_losses >= cfg.loss_streak_trigger):
+                    _size_mult = cfg.loss_streak_size_pct
+
                 if cfg.strategy_rules == "v2":
                     shares = int(
-                        total_equity * cfg.position_allocation_pct / sig["entry_price"]
+                        total_equity * cfg.position_allocation_pct * _size_mult / sig["entry_price"]
                     )
                 else:
                     _sl_sz = cfg.stop_loss_pct_us if infer_market(sig["code"]) == "US" else cfg.stop_loss_pct
-                    risk_amount = total_equity * cfg.risk_per_trade
+                    risk_amount = total_equity * cfg.risk_per_trade * _size_mult
                     shares = int(risk_amount / (sig["entry_price"] * _sl_sz))
 
                 if shares <= 0:
