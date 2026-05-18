@@ -94,6 +94,35 @@ def _download_vix(period: str) -> Optional[pd.DataFrame]:
     return None
 
 
+def fetch_earnings_dates(
+    tickers: list[str], pause: float = 0.1
+) -> Dict[str, list]:
+    """各銘柄の決算日リストを yfinance から取得して辞書で返す。"""
+    out: Dict[str, list] = {}
+    for t in tickers:
+        try:
+            cal = yf.Ticker(t).calendar
+            if cal is not None and not cal.empty:
+                dates = []
+                for col in cal.columns:
+                    for val in cal[col]:
+                        try:
+                            d = pd.Timestamp(val).normalize()
+                            if not pd.isna(d):
+                                dates.append(d)
+                        except Exception:
+                            pass
+                out[t] = sorted(set(dates))
+            else:
+                out[t] = []
+        except Exception:
+            out[t] = []
+        time.sleep(pause)
+    filled = sum(1 for v in out.values() if v)
+    print(f"  決算日取得: {filled}/{len(tickers)} 銘柄")
+    return out
+
+
 def fetch_sector_map(tickers: list[str], pause: float = 0.08) -> Dict[str, str]:
     out: Dict[str, str] = {}
     for t in tickers:
@@ -217,6 +246,7 @@ def run_single(
     *,
     us_index: Optional[pd.DataFrame] = None,
     vix_df: Optional[pd.DataFrame] = None,
+    earnings_dates: Optional[Dict[str, list]] = None,
 ) -> tuple:
     sector_gates = None
     if cfg.sector_filter_enabled and sector_map:
@@ -225,13 +255,19 @@ def run_single(
         print(f"  sector gates built for {len(sector_gates)} tickers")
 
     bt = Backtester(cfg, initial_capital=capital)
-    result = bt.run(panel, topix, sector_gates=sector_gates, us_index=us_index, vix_df=vix_df)
+    result = bt.run(
+        panel, topix,
+        sector_gates=sector_gates,
+        us_index=us_index,
+        vix_df=vix_df,
+        earnings_dates=earnings_dates,
+    )
     metrics = calculate_metrics(result, capital)
     return result, metrics
 
 
 def _load_universe(name: str) -> list[str]:
-    """jpx400 / sp500 / all の全ティッカーリストを返す。"""
+    """jpx400 / sp500 / sp100 / all の全ティッカーリストを返す。"""
     tickers: list[str] = []
     if name in ("jpx400", "all"):
         try:
@@ -241,6 +277,14 @@ def _load_universe(name: str) -> list[str]:
             tickers += [t for t, _ in JPX_TICKERS]
         except Exception as e:
             print(f"  [WARN] JPX400リスト読込失敗: {e}")
+    if name == "sp100":
+        try:
+            import sys, os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+            from scan_sp100 import SP100_TICKERS
+            tickers += [t for t, _ in SP100_TICKERS]
+        except Exception as e:
+            print(f"  [WARN] SP100リスト読込失敗: {e}")
     if name in ("sp500", "all"):
         try:
             import sys, os
@@ -256,8 +300,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tickers", nargs="+", default=None,
                     help="個別ティッカー指定（--universe と併用可・上書き）")
-    ap.add_argument("--universe", choices=["jpx400", "sp500", "all"], default=None,
-                    help="全銘柄ユニバース: jpx400 / sp500 / all")
+    ap.add_argument("--universe", choices=["jpx400", "sp500", "sp100", "all"], default=None,
+                    help="全銘柄ユニバース: jpx400 / sp500 / sp100 / all")
     ap.add_argument("--period", default="3y")
     ap.add_argument("--capital", type=float, default=100_000_000.0)
     ap.add_argument("--out", default="results/cleartrade_backtest.json")
@@ -361,6 +405,13 @@ def main() -> None:
 
     sector_map = fetch_sector_map(list(panel.keys())) if args.sector_filter else None
 
+    # 決算日データ取得（US銘柄のみ。JP株は一般に公開APIで取得困難なのでスキップ）
+    us_tickers_in_panel = [k for k in panel.keys() if infer_market(k) == "US"]
+    earnings_dates: Optional[Dict[str, list]] = None
+    if us_tickers_in_panel:
+        print(f"  決算日データ取得中（{len(us_tickers_in_panel)} 銘柄）...")
+        earnings_dates = fetch_earnings_dates(us_tickers_in_panel)
+
     if args.legacy_cleartrade:
         base_cfg = StrategyConfig(
             strategy_rules="cleartrade",
@@ -406,6 +457,7 @@ def main() -> None:
             panel, topix, cfg, args.capital, sector_map, args.period,
             us_index=us_index,
             vix_df=vix_df,
+            earnings_dates=earnings_dates,
         )
         all_results[mode] = (result, metrics)
         print(f"\n=== entry_mode={mode} ===")

@@ -77,6 +77,20 @@ class StrategyConfig:
     loss_streak_trigger: int = 3             # X連敗後に縮小開始
     loss_streak_size_pct: float = 0.5        # 縮小倍率（0.5=通常の50%）
 
+    # --- 決算回避フィルタ（R案）---
+    use_earnings_blackout: bool = True       # 有効/無効
+    earnings_blackout_before: int = 3        # 決算X日前からエントリー禁止
+    earnings_blackout_after: int = 1         # 決算X日後までエントリー禁止
+
+    # --- 出来高フィルタ（P案）---
+    use_volume_contraction_entry: bool = True  # 有効/無効（押し目日の出来高 < N日平均）
+    volume_contraction_lookback: int = 20      # 出来高平均の参照日数
+    volume_contraction_ratio: float = 0.9      # 押し目日の出来高がこの倍率未満であること
+
+    # --- 月次損失上限（M案）---
+    use_monthly_loss_limit: bool = True      # 有効/無効
+    monthly_loss_limit_pct: float = 0.03     # 月間損失がこの比率を超えたら当月停止
+
     # --- cleartrade（legacy）---
     volume_multiplier: float = 2.0
     breakout_lookback: int = 20
@@ -759,6 +773,7 @@ class Backtester:
         *,
         us_index: Optional[pd.DataFrame] = None,
         vix_df: Optional[pd.DataFrame] = None,
+        earnings_dates: Optional[Dict[str, list]] = None,
     ) -> Dict:
         cfg = self.cfg
         detector = SignalDetector(cfg)
@@ -787,6 +802,23 @@ class Backtester:
         vix_series: Optional[pd.Series] = None
         if cfg.use_vix_filter and vix_df is not None and "vix" in vix_df.columns:
             vix_series = vix_df["vix"].sort_index()
+
+        # 決算日ブラックアウト用セット {ticker: frozenset(dates)}
+        _earnings_set: Dict[str, set] = {}
+        if cfg.use_earnings_blackout and earnings_dates:
+            for code_e, dates_e in earnings_dates.items():
+                expanded: set = set()
+                for d_e in dates_e:
+                    for offset in range(
+                        -cfg.earnings_blackout_before,
+                        cfg.earnings_blackout_after + 1,
+                    ):
+                        expanded.add(d_e + pd.Timedelta(days=offset))
+                _earnings_set[code_e] = expanded
+
+        # 月次損失上限管理
+        _month_equity_start: Dict[str, float] = {}  # "YYYY-MM" -> 月初純資産
+        _month_halted: Dict[str, bool] = {}          # "YYYY-MM" -> 停止フラグ
 
         # 連続損失カウンター
         consecutive_losses: int = 0
@@ -965,9 +997,47 @@ class Backtester:
                 except Exception:
                     pass
 
+            # --- 月次損失上限チェック ---
+            _month_key = current_date.strftime("%Y-%m")
+            _total_equity_now = capital + sum(
+                enriched[c].loc[current_date, "close"] * pos.shares
+                for c, pos in positions.items()
+                if current_date in enriched[c].index
+            )
+            if _month_key not in _month_equity_start:
+                _month_equity_start[_month_key] = _total_equity_now
+                _month_halted[_month_key] = False
+            if cfg.use_monthly_loss_limit and not _month_halted[_month_key]:
+                _month_loss = (_total_equity_now - _month_equity_start[_month_key]) / _month_equity_start[_month_key]
+                if _month_loss <= -cfg.monthly_loss_limit_pct:
+                    _month_halted[_month_key] = True
+
             for sig in today_signals:
                 if vix_block:
                     break  # 本日は全シグナルをスキップ
+                if cfg.use_monthly_loss_limit and _month_halted.get(_month_key, False):
+                    break  # 月次損失上限超過：当月のエントリー停止
+
+                # 決算回避フィルタ
+                if cfg.use_earnings_blackout and sig["code"] in _earnings_set:
+                    if current_date in _earnings_set[sig["code"]]:
+                        continue
+
+                # 出来高収縮フィルタ（押し目日の出来高 < N日平均 × ratio）
+                if cfg.use_volume_contraction_entry:
+                    _df_sig = enriched.get(sig["code"])
+                    if _df_sig is not None and current_date in _df_sig.index:
+                        _idx_loc = _df_sig.index.get_loc(current_date)
+                        if _idx_loc >= cfg.volume_contraction_lookback:
+                            _vol_today = float(_df_sig.iloc[_idx_loc]["volume"])
+                            _vol_avg = float(
+                                _df_sig.iloc[
+                                    _idx_loc - cfg.volume_contraction_lookback : _idx_loc
+                                ]["volume"].mean()
+                            )
+                            if _vol_avg > 0 and _vol_today >= _vol_avg * cfg.volume_contraction_ratio:
+                                continue  # 出来高が多すぎる（本物の押し目でない）
+
                 total_equity = capital
                 for c, pos in positions.items():
                     if current_date in enriched[c].index:
