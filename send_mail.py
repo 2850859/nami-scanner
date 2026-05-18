@@ -36,6 +36,30 @@ def _load_dotenv() -> None:
             os.environ[key] = value
 
 
+def fetch_vix() -> tuple[float | None, str, str]:
+    """
+    ^VIX の最新終値を yfinance で取得し、(値, ラベル, カラー) を返す。
+    取得失敗時は (None, "取得失敗", "#999") を返す。
+    """
+    try:
+        import yfinance as yf
+        vix = yf.Ticker("^VIX")
+        hist = vix.history(period="2d")
+        if hist.empty:
+            return None, "取得失敗", "#999"
+        val = float(hist["Close"].iloc[-1])
+        if val >= 35:
+            label, color = f"{val:.1f} 🔴 危険域（新規停止＋利確検討）", "#d93025"
+        elif val >= 28:
+            label, color = f"{val:.1f} 🟡 警戒域（新規エントリー停止）", "#f5a623"
+        else:
+            label, color = f"{val:.1f} 🟢 通常域", "#00955a"
+        return val, label, color
+    except Exception as e:
+        print(f"  WARN: VIX 取得失敗: {e}")
+        return None, "取得失敗", "#999"
+
+
 def load_results(market: str) -> dict:
     """results/jpx400.json または sp500.json を読み込む"""
     path = f"results/{market}.json"
@@ -332,6 +356,13 @@ def main(test: bool = False):
         return
 
     # ========================================
+    # VIX 取得
+    # ========================================
+    print("\n[VIX] 最新値を取得中...")
+    vix_val, vix_label, vix_color = fetch_vix()
+    print(f"  VIX: {vix_label}")
+
+    # ========================================
     # GC追跡 勝率統計の読み込み
     # ========================================
     gc_stats = {}
@@ -446,7 +477,8 @@ def main(test: bool = False):
     # ========================================
     # メール本文（HTML）作成
     # ========================================
-    subject = f"[波乗りスキャナー] {today_label} シグナル {total_signals}件 (GC:{jpx_gc + sp_gc} / S:{jpx_s + sp_s} / A:{jpx_a + sp_a})"
+    vix_tag = f" VIX:{vix_val:.0f}" if vix_val is not None else ""
+    subject = f"[波乗りスキャナー] {today_label}{vix_tag} シグナル {total_signals}件 (GC:{jpx_gc + sp_gc} / S:{jpx_s + sp_s} / A:{jpx_a + sp_a})"
 
     html_body = f"""<!DOCTYPE html>
 <html lang="ja">
@@ -457,6 +489,16 @@ def main(test: bool = False):
     <h1 style="margin: 0; font-size: 22px;">🌊 波乗りスキャナー</h1>
     <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 13px;">{today_str} スキャン結果</p>
   </div>
+
+  <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">市場環境</h2>
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+    <tbody>
+      <tr>
+        <td style="padding: 10px; border: 1px solid #e0e6ed; font-weight: bold; width: 80px;">VIX</td>
+        <td style="padding: 10px; border: 1px solid #e0e6ed; font-weight: bold; color: {vix_color};">{vix_label}</td>
+      </tr>
+    </tbody>
+  </table>
 
   <h2 style="font-size: 16px; border-bottom: 2px solid #00d4ff; padding-bottom: 8px;">本日のシグナル集計</h2>
 
