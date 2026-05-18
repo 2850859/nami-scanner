@@ -62,6 +62,7 @@ class StrategyConfig:
     rsi_overbought_us: float = 75.0      # JP 80 → US 75（早めに半利確）
     sma20_dev_max_us: float = 0.10       # JP 7% → US 10%（自然乖離が大きい）
     po_break_days_us: int = 3            # US株はPO崩れ3日連続で撤退（短期の揺れを無視）
+    breakeven_trigger_pct_us: float = 0.15  # JP +10% → US +15% でBE移動（利益を伸ばす）
 
     # --- VIXフィルタ（v3.1）---
     vix_threshold: float = 28.0          # VIX >= 28 で新規エントリー停止
@@ -674,9 +675,8 @@ class Backtester:
             )
             return True, capital
 
-        if not pos.breakeven_active and row["high"] >= pos.entry_price * (
-            1 + cfg.breakeven_trigger_pct
-        ):
+        _be_trigger = cfg.breakeven_trigger_pct_us if pos.market == "US" else cfg.breakeven_trigger_pct
+        if not pos.breakeven_active and row["high"] >= pos.entry_price * (1 + _be_trigger):
             pos.breakeven_active = True
 
         _rsi_ob = cfg.rsi_overbought_us if pos.market == "US" else cfg.rsi_overbought
