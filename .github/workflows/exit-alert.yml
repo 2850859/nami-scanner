@@ -1,0 +1,38 @@
+name: 波乗りトレード 売却アラート（毎日）
+
+on:
+  schedule:
+    # 日本株クローズ後 16:30 JST (07:30 UTC) に実行
+    - cron: '30 7 * * 1-5'
+    # 米国株クローズ後 翌朝 6:30 JST (21:30 UTC 前日) に実行
+    - cron: '30 21 * * 1-5'
+  workflow_dispatch:  # 手動実行も可
+
+jobs:
+  exit-alert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: ライブラリ インストール
+        run: pip install yfinance pandas requests
+
+      - name: 売却アラート チェック＆メール送信
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+        run: python exit_alert.py
+
+      - name: プレビュー HTML をアーティファクトに保存
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exit-alert-preview
+          path: results/exit_alert_preview.html
+          retention-days: 7

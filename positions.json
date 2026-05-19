@@ -1,0 +1,40 @@
+[
+  {
+    "_comment": "=== 記入方法 ===",
+    "_layer_note": "layer: 'short'=波乗り層（短期）/ 'long'=長期保有層",
+    "_code_note": "日本株: '8306.T' のように .T を付ける。米国株: 'AAPL' などシンボルのみ",
+    "_market_cap_note": "market_cap_jpy: 時価総額（円）。大型株判定に使用（10兆円超でRSI80基準）",
+    "_realized_pct_note": "long層のみ: これまでに利確済みの割合（0.0〜0.5）",
+    "_be_triggered_note": "short層のみ: +10%到達後にブレークイーントリガーが発動済みか"
+  },
+  {
+    "code": "8306.T",
+    "name": "三菱UFJ",
+    "layer": "short",
+    "entry_price": 1800,
+    "shares": 5000,
+    "entry_date": "2026-04-15",
+    "market_cap_jpy": 18000000000000,
+    "be_triggered": false
+  },
+  {
+    "code": "6857.T",
+    "name": "アドバンテスト",
+    "layer": "long",
+    "avg_cost": 21499,
+    "shares": 800,
+    "entry_date": "2024-01-10",
+    "market_cap_jpy": 8000000000000,
+    "realized_pct": 0.0
+  },
+  {
+    "code": "NVDA",
+    "name": "NVIDIA",
+    "layer": "short",
+    "entry_price": 110.0,
+    "shares": 100,
+    "entry_date": "2026-04-20",
+    "market_cap_jpy": 400000000000000,
+    "be_triggered": false
+  }
+]
