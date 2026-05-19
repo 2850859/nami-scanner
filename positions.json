@@ -1,11 +1,12 @@
 [
   {
+    "_memo": "=== 長期保有層（layer: long）=== avg_cost・realized_pct を管理",
     "code": "6857.T",
     "name": "アドバンテスト",
     "layer": "long",
     "avg_cost": 21499,
     "shares": 800,
-    "entry_date": "2024-01-01",
+    "entry_date": "2026-03-09",
     "market_cap_jpy": 8000000000000,
     "realized_pct": 0.0
   },
@@ -15,7 +16,7 @@
     "layer": "long",
     "avg_cost": 5875,
     "shares": 1800,
-    "entry_date": "2024-01-01",
+    "entry_date": "2026-04-20",
     "market_cap_jpy": 12000000000000,
     "realized_pct": 0.0
   },
@@ -25,19 +26,70 @@
     "layer": "long",
     "avg_cost": 4391,
     "shares": 1100,
-    "entry_date": "2024-01-01",
+    "entry_date": "2026-03-23",
     "market_cap_jpy": 5000000000000,
     "realized_pct": 0.0
   },
   {
+    "code": "5016.T",
+    "name": "JX金属",
+    "layer": "long",
+    "avg_cost": 4836,
+    "shares": 600,
+    "entry_date": "2026-05-12",
+    "market_cap_jpy": 800000000000,
+    "realized_pct": 0.0
+  },
+  {
+    "code": "MSFT",
+    "name": "マイクロソフト",
+    "layer": "long",
+    "avg_cost": 393.66,
+    "shares": 278,
+    "entry_date": "2026-03-03",
+    "market_cap_jpy": 400000000000000,
+    "realized_pct": 0.0
+  },
+  {
+    "code": "AVGO",
+    "name": "ブロードコム",
+    "layer": "long",
+    "avg_cost": 311.92,
+    "shares": 150,
+    "entry_date": "2026-03-03",
+    "market_cap_jpy": 100000000000000,
+    "realized_pct": 0.0
+  },
+  {
+    "code": "NVDA",
+    "name": "エヌビディア",
+    "layer": "long",
+    "avg_cost": 190.96,
+    "shares": 250,
+    "entry_date": "2026-03-26",
+    "market_cap_jpy": 500000000000000,
+    "realized_pct": 0.0
+  },
+  {
+    "code": "TSLA",
+    "name": "テスラ",
+    "layer": "long",
+    "avg_cost": 385.51,
+    "shares": 20,
+    "entry_date": "2026-05-06",
+    "market_cap_jpy": 100000000000000,
+    "realized_pct": 0.0
+  },
+  {
+    "_memo": "=== 波乗り層（layer: short）=== entry_price・be_triggered を管理",
     "code": "6861.T",
     "name": "キーエンス",
-    "layer": "long",
-    "avg_cost": 54527,
+    "layer": "short",
+    "entry_price": 54527,
     "shares": 20,
-    "entry_date": "2024-01-01",
+    "entry_date": "2026-01-01",
     "market_cap_jpy": 20000000000000,
-    "realized_pct": 0.0
+    "be_triggered": true
   },
   {
     "code": "4631.T",
@@ -65,7 +117,7 @@
     "layer": "short",
     "entry_price": 3014,
     "shares": 1500,
-    "entry_date": "2026-01-01",
+    "entry_date": "2026-04-17",
     "market_cap_jpy": 1000000000000,
     "be_triggered": false
   },
@@ -75,7 +127,7 @@
     "layer": "short",
     "entry_price": 5805,
     "shares": 500,
-    "entry_date": "2026-01-01",
+    "entry_date": "2026-05-15",
     "market_cap_jpy": 1500000000000,
     "be_triggered": false
   },
@@ -85,19 +137,9 @@
     "layer": "short",
     "entry_price": 2004,
     "shares": 1000,
-    "entry_date": "2026-01-01",
+    "entry_date": "2026-04-28",
     "market_cap_jpy": 500000000000,
     "be_triggered": true
-  },
-  {
-    "code": "5016.T",
-    "name": "JX金属",
-    "layer": "short",
-    "entry_price": 4836,
-    "shares": 600,
-    "entry_date": "2026-01-01",
-    "market_cap_jpy": 800000000000,
-    "be_triggered": false
   },
   {
     "code": "5802.T",
@@ -105,7 +147,7 @@
     "layer": "short",
     "entry_price": 9377,
     "shares": 200,
-    "entry_date": "2026-01-01",
+    "entry_date": "2026-05-15",
     "market_cap_jpy": 2000000000000,
     "be_triggered": true
   },
@@ -125,7 +167,7 @@
     "layer": "short",
     "entry_price": 1305,
     "shares": 1000,
-    "entry_date": "2026-01-01",
+    "entry_date": "2026-04-23",
     "market_cap_jpy": 8000000000000,
     "be_triggered": false
   },
@@ -145,7 +187,7 @@
     "layer": "short",
     "entry_price": 4780,
     "shares": 200,
-    "entry_date": "2026-01-01",
+    "entry_date": "2026-04-28",
     "market_cap_jpy": 2000000000000,
     "be_triggered": false
   },
@@ -155,7 +197,7 @@
     "layer": "short",
     "entry_price": 5400,
     "shares": 200,
-    "entry_date": "2026-01-01",
+    "entry_date": "2026-05-18",
     "market_cap_jpy": 1000000000000,
     "be_triggered": false
   },
@@ -165,48 +207,8 @@
     "layer": "short",
     "entry_price": 2000,
     "shares": 500,
-    "entry_date": "2026-01-01",
+    "entry_date": "2026-05-18",
     "market_cap_jpy": 12000000000000,
-    "be_triggered": false
-  },
-  {
-    "code": "MSFT",
-    "name": "マイクロソフト",
-    "layer": "short",
-    "entry_price": 393.66,
-    "shares": 278,
-    "entry_date": "2026-01-01",
-    "market_cap_jpy": 400000000000000,
-    "be_triggered": false
-  },
-  {
-    "code": "AVGO",
-    "name": "ブロードコム",
-    "layer": "short",
-    "entry_price": 311.92,
-    "shares": 150,
-    "entry_date": "2026-01-01",
-    "market_cap_jpy": 100000000000000,
-    "be_triggered": true
-  },
-  {
-    "code": "NVDA",
-    "name": "エヌビディア",
-    "layer": "short",
-    "entry_price": 190.96,
-    "shares": 250,
-    "entry_date": "2026-01-01",
-    "market_cap_jpy": 500000000000000,
-    "be_triggered": true
-  },
-  {
-    "code": "TSLA",
-    "name": "テスラ",
-    "layer": "short",
-    "entry_price": 385.51,
-    "shares": 20,
-    "entry_date": "2026-01-01",
-    "market_cap_jpy": 100000000000000,
     "be_triggered": false
   }
 ]
