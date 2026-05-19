@@ -1,40 +1,212 @@
 [
   {
-    "_comment": "=== 記入方法 ===",
-    "_layer_note": "layer: 'short'=波乗り層（短期）/ 'long'=長期保有層",
-    "_code_note": "日本株: '8306.T' のように .T を付ける。米国株: 'AAPL' などシンボルのみ",
-    "_market_cap_note": "market_cap_jpy: 時価総額（円）。大型株判定に使用（10兆円超でRSI80基準）",
-    "_realized_pct_note": "long層のみ: これまでに利確済みの割合（0.0〜0.5）",
-    "_be_triggered_note": "short層のみ: +10%到達後にブレークイーントリガーが発動済みか"
-  },
-  {
-    "code": "8306.T",
-    "name": "三菱UFJ",
-    "layer": "short",
-    "entry_price": 1800,
-    "shares": 5000,
-    "entry_date": "2026-04-15",
-    "market_cap_jpy": 18000000000000,
-    "be_triggered": false
-  },
-  {
     "code": "6857.T",
     "name": "アドバンテスト",
     "layer": "long",
     "avg_cost": 21499,
     "shares": 800,
-    "entry_date": "2024-01-10",
+    "entry_date": "2024-01-01",
     "market_cap_jpy": 8000000000000,
     "realized_pct": 0.0
   },
   {
-    "code": "NVDA",
-    "name": "NVIDIA",
+    "code": "4063.T",
+    "name": "信越化学工業",
+    "layer": "long",
+    "avg_cost": 5875,
+    "shares": 1800,
+    "entry_date": "2024-01-01",
+    "market_cap_jpy": 12000000000000,
+    "realized_pct": 0.0
+  },
+  {
+    "code": "7011.T",
+    "name": "三菱重工業",
+    "layer": "long",
+    "avg_cost": 4391,
+    "shares": 1100,
+    "entry_date": "2024-01-01",
+    "market_cap_jpy": 5000000000000,
+    "realized_pct": 0.0
+  },
+  {
+    "code": "6861.T",
+    "name": "キーエンス",
+    "layer": "long",
+    "avg_cost": 54527,
+    "shares": 20,
+    "entry_date": "2024-01-01",
+    "market_cap_jpy": 20000000000000,
+    "realized_pct": 0.0
+  },
+  {
+    "code": "4631.T",
+    "name": "DIC",
     "layer": "short",
-    "entry_price": 110.0,
-    "shares": 100,
-    "entry_date": "2026-04-20",
+    "entry_price": 3845,
+    "shares": 1000,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 400000000000,
+    "be_triggered": true
+  },
+  {
+    "code": "6908.T",
+    "name": "イリソ電子工業",
+    "layer": "short",
+    "entry_price": 3459,
+    "shares": 1200,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 100000000000,
+    "be_triggered": false
+  },
+  {
+    "code": "7013.T",
+    "name": "IHI",
+    "layer": "short",
+    "entry_price": 3014,
+    "shares": 1500,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 1000000000000,
+    "be_triggered": false
+  },
+  {
+    "code": "5803.T",
+    "name": "フジクラ",
+    "layer": "short",
+    "entry_price": 5805,
+    "shares": 500,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 1500000000000,
+    "be_triggered": false
+  },
+  {
+    "code": "6965.T",
+    "name": "浜松ホトニクス",
+    "layer": "short",
+    "entry_price": 2004,
+    "shares": 1000,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 500000000000,
+    "be_triggered": true
+  },
+  {
+    "code": "5016.T",
+    "name": "JX金属",
+    "layer": "short",
+    "entry_price": 4836,
+    "shares": 600,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 800000000000,
+    "be_triggered": false
+  },
+  {
+    "code": "5802.T",
+    "name": "住友電気工業",
+    "layer": "short",
+    "entry_price": 9377,
+    "shares": 200,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 2000000000000,
+    "be_triggered": true
+  },
+  {
+    "code": "7646.T",
+    "name": "PLANT",
+    "layer": "short",
+    "entry_price": 2035,
+    "shares": 1200,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 30000000000,
+    "be_triggered": false
+  },
+  {
+    "code": "7267.T",
+    "name": "本田技研工業",
+    "layer": "short",
+    "entry_price": 1305,
+    "shares": 1000,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 8000000000000,
+    "be_triggered": false
+  },
+  {
+    "code": "8058.T",
+    "name": "三菱商事",
+    "layer": "short",
+    "entry_price": 5535,
+    "shares": 200,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 12000000000000,
+    "be_triggered": false
+  },
+  {
+    "code": "2802.T",
+    "name": "味の素",
+    "layer": "short",
+    "entry_price": 4780,
+    "shares": 200,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 2000000000000,
+    "be_triggered": false
+  },
+  {
+    "code": "6361.T",
+    "name": "荏原製作所",
+    "layer": "short",
+    "entry_price": 5400,
+    "shares": 200,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 1000000000000,
+    "be_triggered": false
+  },
+  {
+    "code": "8001.T",
+    "name": "伊藤忠商事",
+    "layer": "short",
+    "entry_price": 2000,
+    "shares": 500,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 12000000000000,
+    "be_triggered": false
+  },
+  {
+    "code": "MSFT",
+    "name": "マイクロソフト",
+    "layer": "short",
+    "entry_price": 393.66,
+    "shares": 278,
+    "entry_date": "2026-01-01",
     "market_cap_jpy": 400000000000000,
+    "be_triggered": false
+  },
+  {
+    "code": "AVGO",
+    "name": "ブロードコム",
+    "layer": "short",
+    "entry_price": 311.92,
+    "shares": 150,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 100000000000000,
+    "be_triggered": true
+  },
+  {
+    "code": "NVDA",
+    "name": "エヌビディア",
+    "layer": "short",
+    "entry_price": 190.96,
+    "shares": 250,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 500000000000000,
+    "be_triggered": true
+  },
+  {
+    "code": "TSLA",
+    "name": "テスラ",
+    "layer": "short",
+    "entry_price": 385.51,
+    "shares": 20,
+    "entry_date": "2026-01-01",
+    "market_cap_jpy": 100000000000000,
     "be_triggered": false
   }
 ]
