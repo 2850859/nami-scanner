@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-25 18:26 JST",
+  "generated_at": "2026-05-25 20:37 JST",
   "market": "商品先物",
   "timeframes": {
     "1wk": [
@@ -713,7 +713,7 @@
         "ma10_slope": -19.55,
         "ma20_slope": -7.61,
         "ma50_slope": -10.586,
-        "vol_ratio": 78.64,
+        "vol_ratio": 95.95,
         "vol_confirmed": true,
         "weekly_aligned": true,
         "market_caution": false
@@ -744,7 +744,7 @@
         "ma10_slope": -0.929,
         "ma20_slope": 0.06,
         "ma50_slope": -0.094,
-        "vol_ratio": 6.05,
+        "vol_ratio": 6.42,
         "vol_confirmed": true,
         "weekly_aligned": true,
         "market_caution": false
@@ -775,7 +775,7 @@
         "ma10_slope": -0.003,
         "ma20_slope": 0.018,
         "ma50_slope": 0.013,
-        "vol_ratio": 4.22,
+        "vol_ratio": 4.94,
         "vol_confirmed": true,
         "weekly_aligned": true,
         "market_caution": false
@@ -806,7 +806,7 @@
         "ma10_slope": -17.58,
         "ma20_slope": -2.07,
         "ma50_slope": -1.938,
-        "vol_ratio": 53.74,
+        "vol_ratio": 58.74,
         "vol_confirmed": true,
         "weekly_aligned": true,
         "market_caution": false
@@ -837,7 +837,7 @@
         "ma10_slope": -15.35,
         "ma20_slope": -5.87,
         "ma50_slope": -3.876,
-        "vol_ratio": 484.57,
+        "vol_ratio": 598.86,
         "vol_confirmed": true,
         "weekly_aligned": true,
         "market_caution": false
@@ -868,7 +868,7 @@
         "ma10_slope": -0.147,
         "ma20_slope": 0.011,
         "ma50_slope": -0.042,
-        "vol_ratio": 0.21,
+        "vol_ratio": 0.24,
         "vol_confirmed": false,
         "weekly_aligned": true,
         "market_caution": false
@@ -899,7 +899,7 @@
         "ma10_slope": -0.4,
         "ma20_slope": -0.401,
         "ma50_slope": -0.059,
-        "vol_ratio": 0.19,
+        "vol_ratio": 0.22,
         "vol_confirmed": false,
         "weekly_aligned": true,
         "market_caution": false
@@ -930,7 +930,7 @@
         "ma10_slope": 0.011,
         "ma20_slope": 0.024,
         "ma50_slope": -0.002,
-        "vol_ratio": 0.04,
+        "vol_ratio": 0.06,
         "vol_confirmed": false,
         "weekly_aligned": true,
         "market_caution": false
@@ -961,7 +961,7 @@
         "ma10_slope": -0.025,
         "ma20_slope": -0.007,
         "ma50_slope": 0.006,
-        "vol_ratio": 0.14,
+        "vol_ratio": 0.15,
         "vol_confirmed": false,
         "weekly_aligned": true,
         "market_caution": false
@@ -992,7 +992,7 @@
         "ma10_slope": -0.02,
         "ma20_slope": -0.01,
         "ma50_slope": -0.005,
-        "vol_ratio": 0.12,
+        "vol_ratio": 0.15,
         "vol_confirmed": false,
         "weekly_aligned": true,
         "market_caution": false
