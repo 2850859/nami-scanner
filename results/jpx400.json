@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-11 18:46 JST",
+  "generated_at": "2026-06-11 20:49 JST",
   "market": "JPX400",
   "timeframes": {
     "1wk": [
@@ -725,7 +725,7 @@
         "ma20": 1752.4,
         "ma50": 1887.4,
         "ma100": 1925.2,
-        "ma200": 1876.2,
+        "ma200": 1876.1,
         "diff_pct": -2.53,
         "gc_today": false,
         "ma5_above": false,
