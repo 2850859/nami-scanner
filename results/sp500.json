@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-13 17:37 JST",
+  "generated_at": "2026-07-13 19:47 JST",
   "market": "S&P500",
   "comparison_note": "日足のみ: finviz = PDF の Finviz スクリーナー相当（20日平均出来高≥200万株、終値>SMA20/50/200、50日高値から0〜10%以内）。yfinance ベースで Finviz 公式値と一致しない場合があります。",
   "timeframes": {
@@ -31888,7 +31888,7 @@
         "ma10": 525.03,
         "ma20": 541.93,
         "ma50": 456.18,
-        "ma100": 369.83,
+        "ma100": 369.84,
         "ma200": 0,
         "diff_pct": -3.52,
         "gc_today": false,
