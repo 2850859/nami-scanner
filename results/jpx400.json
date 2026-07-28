@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-28 16:48 JST",
+  "generated_at": "2026-07-28 18:47 JST",
   "market": "JPX400",
   "timeframes": {
     "1wk": [
@@ -30316,9 +30316,9 @@
         "close": 2793.0,
         "ma5": 2856.1,
         "ma10": 3295.1,
-        "ma20": 3622.3,
-        "ma50": 3694.1,
-        "ma100": 3002.8,
+        "ma20": 3606.2,
+        "ma50": 3648.1,
+        "ma100": 2939.6,
         "ma200": 0,
         "diff_pct": -13.32,
         "gc_today": false,
@@ -30333,9 +30333,9 @@
         "score": 13,
         "rank": "C",
         "ma5_slope": -182.6,
-        "ma10_slope": -127.1,
-        "ma20_slope": -49.0,
-        "ma50_slope": -6.6,
+        "ma10_slope": -123.8,
+        "ma20_slope": -47.5,
+        "ma50_slope": -5.0,
         "vol_ratio": null,
         "vol_confirmed": false,
         "weekly_aligned": null,
