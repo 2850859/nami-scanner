@@ -1,23 +1,23 @@
 {
-  "updated_at": "2026-07-31",
-  "total": 3036,
+  "updated_at": "2026-08-03",
+  "total": 3057,
   "stats": {
     "5": {
-      "total": 2646,
-      "wins": 1353,
+      "total": 2665,
+      "wins": 1363,
       "win_rate": 51.1,
       "avg_pct": NaN
     },
     "10": {
-      "total": 2391,
-      "wins": 1175,
-      "win_rate": 49.1,
+      "total": 2444,
+      "wins": 1196,
+      "win_rate": 48.9,
       "avg_pct": NaN
     },
     "20": {
-      "total": 2050,
-      "wins": 1138,
-      "win_rate": 55.5,
+      "total": 2102,
+      "wins": 1168,
+      "win_rate": 55.6,
       "avg_pct": NaN
     }
   }
