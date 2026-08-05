@@ -2,9 +2,10 @@
 name: バックテスト → メール通知
 
 on:
-  schedule:
-    # おまかせ: 毎週日曜 21:00 JST（12:00 UTC）· 負荷と通知の頻度のバランス
-    - cron: "0 12 * * 0"
+  # 一時停止中: 定時通知を止めるため schedule を無効化
+  # schedule:
+  #   # おまかせ: 毎週日曜 21:00 JST（12:00 UTC）· 負荷と通知の頻度のバランス
+  #   - cron: "0 12 * * 0"
   workflow_dispatch:
     inputs:
       tickers:
